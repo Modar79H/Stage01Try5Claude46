@@ -1,4 +1,5 @@
 // lib/services/csv.ts
+import Papa from "papaparse";
 
 export interface CSVRow {
   [key: string]: string;
@@ -26,58 +27,61 @@ class CSVProcessingService {
 
       // Read file content
       const fileContent = await file.text();
-      const lines = fileContent.split("\n").filter((line) => line.trim());
 
-      if (lines.length < 2) {
+      // Parse CSV with papaparse
+      const parseResult = Papa.parse<CSVRow>(fileContent, {
+        header: true,
+        skipEmptyLines: true,
+        dynamicTyping: false,
+        transformHeader: (header) => header.trim(),
+        transform: (value) => value.trim(),
+      });
+
+      if (parseResult.errors.length > 0) {
+        parseResult.errors.forEach((error) => {
+          errors.push(`Parse error: ${error.message} at row ${error.row}`);
+        });
+      }
+
+      if (parseResult.data.length === 0) {
         return {
           reviews: [],
           totalRows: 0,
           validRows: 0,
-          errors: ["CSV file must have at least a header row and one data row"],
+          errors: ["CSV file must have at least one data row"],
         };
       }
 
-      // Parse headers
-      const headers = lines[0]
-        .split(",")
-        .map((h) => h.trim().replace(/"/g, ""));
+      // Get headers from first row
+      const headers = Object.keys(parseResult.data[0]);
       const columnMapping = this.detectColumns(headers);
 
       if (!columnMapping.reviewText) {
         return {
           reviews: [],
-          totalRows: lines.length - 1,
+          totalRows: parseResult.data.length,
           validRows: 0,
           errors: ["Could not detect review text column"],
         };
       }
 
       // Process data rows
-      for (let i = 1; i < lines.length; i++) {
+      parseResult.data.forEach((row, index) => {
         try {
-          const values = lines[i]
-            .split(",")
-            .map((v) => v.trim().replace(/"/g, ""));
-          const row: CSVRow = {};
-
-          headers.forEach((header, index) => {
-            row[header] = values[index] || "";
-          });
-
           const processed = this.processRow(row, columnMapping);
           if (processed) {
             results.push(processed);
           }
         } catch (error) {
           errors.push(
-            `Row ${i + 1}: ${error instanceof Error ? error.message : "Processing error"}`,
+            `Row ${index + 2}: ${error instanceof Error ? error.message : "Processing error"}`,
           );
         }
-      }
+      });
 
       return {
         reviews: results,
-        totalRows: lines.length - 1,
+        totalRows: parseResult.data.length,
         validRows: results.length,
         errors,
       };

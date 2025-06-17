@@ -59,7 +59,10 @@ class AnalysisProcessingService {
     }
   }
 
-  async processAllAnalyses(productId: string): Promise<{
+  async processAllAnalyses(
+    productId: string,
+    userId: string,
+  ): Promise<{
     success: boolean;
     completedAnalyses: string[];
     errors: string[];
@@ -76,14 +79,22 @@ class AnalysisProcessingService {
 
       this.updateProgress(productId, "Initializing", 0, ANALYSIS_TYPES.length);
 
-      // Get product with competitors
+      // Get product with competitors and verify user ownership
       const product = await prisma.product.findUnique({
         where: { id: productId },
-        include: { competitors: true },
+        include: {
+          competitors: true,
+          brand: true,
+        },
       });
 
       if (!product) {
         throw new Error("Product not found");
+      }
+
+      // Verify user owns this product
+      if (product.brand.userId !== userId) {
+        throw new Error("Unauthorized: Product does not belong to user");
       }
 
       const hasCompetitors = product.competitors.length > 0;
@@ -103,12 +114,16 @@ class AnalysisProcessingService {
             analysesToRun.length,
           );
 
-          // Get reviews for this specific analysis
+          // Get reviews for this specific analysis with user and brand context
           const reviews = await pineconeService.getReviewsForAnalysis(
             productId,
             analysisType,
+            userId, // Pass userId for namespace isolation
+            product.brand.id, // Pass brandId for brand-level namespace
             this.getOptimalReviewCount(analysisType),
             false,
+            undefined, // No specific version
+            product.name, // Pass product name for better query context
           );
 
           if (reviews.length === 0) {
@@ -123,6 +138,8 @@ class AnalysisProcessingService {
             competitorReviews = await pineconeService.getCompetitorReviews(
               productId,
               competitorIds,
+              userId, // Pass userId for namespace isolation
+              product.brand.id, // Pass brandId for brand-level namespace
               50,
             );
           }
@@ -258,27 +275,40 @@ class AnalysisProcessingService {
   async reprocessAnalysis(
     productId: string,
     analysisType: AnalysisType,
+    userId: string,
   ): Promise<{
     success: boolean;
     error?: string;
   }> {
     try {
-      // Get product with competitors
+      // Get product with competitors and verify user ownership
       const product = await prisma.product.findUnique({
         where: { id: productId },
-        include: { competitors: true },
+        include: {
+          competitors: true,
+          brand: true,
+        },
       });
 
       if (!product) {
         throw new Error("Product not found");
       }
 
-      // Get reviews for this specific analysis
+      // Verify user owns this product
+      if (product.brand.userId !== userId) {
+        throw new Error("Unauthorized: Product does not belong to user");
+      }
+
+      // Get reviews for this specific analysis with user and brand context
       const reviews = await pineconeService.getReviewsForAnalysis(
         productId,
         analysisType,
+        userId, // Pass userId for namespace isolation
+        product.brand.id, // Pass brandId for brand-level namespace
         this.getOptimalReviewCount(analysisType),
         false,
+        undefined, // No specific version
+        product.name, // Pass product name for better query context
       );
 
       if (reviews.length === 0) {
@@ -292,6 +322,8 @@ class AnalysisProcessingService {
         competitorReviews = await pineconeService.getCompetitorReviews(
           productId,
           competitorIds,
+          userId, // Pass userId for namespace isolation
+          product.brand.id, // Pass brandId for brand-level namespace
           50,
         );
       }
@@ -429,7 +461,10 @@ class AnalysisProcessingService {
     return reviewCounts[analysisType] || 100;
   }
 
-  async getAnalysisStatus(productId: string): Promise<{
+  async getAnalysisStatus(
+    productId: string,
+    userId: string,
+  ): Promise<{
     isProcessing: boolean;
     completedAnalyses: string[];
     failedAnalyses: string[];
@@ -440,11 +475,17 @@ class AnalysisProcessingService {
       include: {
         analyses: true,
         competitors: true,
+        brand: true,
       },
     });
 
     if (!product) {
       throw new Error("Product not found");
+    }
+
+    // Verify user owns this product
+    if (product.brand.userId !== userId) {
+      throw new Error("Unauthorized: Product does not belong to user");
     }
 
     const hasCompetitors = product.competitors.length > 0;

@@ -15,13 +15,20 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const userId = session.user.id;
     const { productId } = params;
 
-    const status = await analysisService.getAnalysisStatus(productId);
+    const status = await analysisService.getAnalysisStatus(productId, userId);
 
     return NextResponse.json(status);
   } catch (error) {
     console.error("Error fetching analysis status:", error);
+
+    // Handle specific authorization errors
+    if (error instanceof Error && error.message.includes("Unauthorized")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },
@@ -41,6 +48,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const userId = session.user.id;
     const { productId } = params;
     const { analysisType } = await request.json();
 
@@ -49,11 +57,14 @@ export async function POST(
       const result = await analysisService.reprocessAnalysis(
         productId,
         analysisType,
+        userId, // Pass userId for namespace isolation
       );
       return NextResponse.json(result);
     } else {
       // Restart all analyses
-      analysisService.processAllAnalyses(productId).catch(console.error);
+      analysisService
+        .processAllAnalyses(productId, userId)
+        .catch(console.error);
       return NextResponse.json({
         success: true,
         message: "Analysis restart initiated",
@@ -61,6 +72,12 @@ export async function POST(
     }
   } catch (error) {
     console.error("Error restarting analysis:", error);
+
+    // Handle specific authorization errors
+    if (error instanceof Error && error.message.includes("Unauthorized")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },

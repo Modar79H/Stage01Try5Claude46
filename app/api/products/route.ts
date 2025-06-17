@@ -1,4 +1,4 @@
-// app/api/products/route.ts
+// app/api/products/route-with-competitors.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -15,10 +15,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const userId = session.user.id;
     const formData = await request.formData();
     const name = formData.get("name") as string;
     const brandId = formData.get("brandId") as string;
     const reviewsFile = formData.get("reviewsFile") as File;
+    const competitorCount = parseInt(
+      (formData.get("competitorCount") as string) || "0",
+    );
 
     if (!name || !brandId || !reviewsFile) {
       return NextResponse.json(
@@ -27,16 +31,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify brand belongs to user
+    // Verify brand belongs to user and get brand details
     const brand = await prisma.brand.findUnique({
       where: { id: brandId },
     });
 
-    if (!brand || brand.userId !== session.user.id) {
+    if (!brand || brand.userId !== userId) {
       return NextResponse.json({ error: "Brand not found" }, { status: 404 });
     }
 
-    // Validate CSV file
+    // Validate main product CSV file
     const validation = await csvService.validateCSVStructure(reviewsFile);
     if (!validation.isValid) {
       return NextResponse.json(
@@ -62,7 +66,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Process CSV file
+    // Process main product CSV file
     const csvResult = await csvService.processCSV(reviewsFile);
 
     if (csvResult.validRows === 0) {
@@ -73,6 +77,47 @@ export async function POST(request: NextRequest) {
         },
         { status: 400 },
       );
+    }
+
+    // Process competitor files if any
+    const competitors: { name: string; file: File; csvResult: any }[] = [];
+
+    for (let i = 0; i < competitorCount; i++) {
+      const competitorName = formData.get(`competitorName_${i}`) as string;
+      const competitorFile = formData.get(`competitorFile_${i}`) as File;
+
+      if (competitorName && competitorFile) {
+        // Validate competitor CSV
+        const competitorValidation =
+          await csvService.validateCSVStructure(competitorFile);
+        if (!competitorValidation.isValid) {
+          return NextResponse.json(
+            {
+              error: `Invalid CSV file for competitor ${competitorName}`,
+              details: competitorValidation.errors,
+            },
+            { status: 400 },
+          );
+        }
+
+        // Process competitor CSV
+        const competitorCsvResult = await csvService.processCSV(competitorFile);
+        if (competitorCsvResult.validRows === 0) {
+          return NextResponse.json(
+            {
+              error: `No valid reviews found for competitor ${competitorName}`,
+              details: competitorCsvResult.errors,
+            },
+            { status: 400 },
+          );
+        }
+
+        competitors.push({
+          name: competitorName,
+          file: competitorFile,
+          csvResult: competitorCsvResult,
+        });
+      }
     }
 
     // Create product
@@ -86,7 +131,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Store reviews in Pinecone
+    // Store main product reviews in Pinecone
     const reviewsData = csvResult.reviews.map((review) => ({
       id: "",
       productId: product.id,
@@ -96,7 +141,28 @@ export async function POST(request: NextRequest) {
       metadata: review.metadata,
     }));
 
-    const pineconeIds = await pineconeService.storeMultipleReviews(reviewsData);
+    console.log(
+      `🚀 About to store ${reviewsData.length} reviews in Pinecone for product: ${product.id}`,
+    );
+    console.log(`👤 User: ${userId}, 🏢 Brand: ${brandId} (${brand.name})`);
+
+    let pineconeIds: string[];
+    try {
+      pineconeIds = await pineconeService.storeMultipleReviews(
+        reviewsData,
+        userId,
+        brandId,
+        "v1", // First version
+        brand.name, // Brand name for context
+        name, // Product name for context
+      );
+      console.log(
+        `✅ Successfully stored reviews. Pinecone IDs count: ${pineconeIds.length}`,
+      );
+    } catch (pineconeError) {
+      console.error(`❌ Error storing reviews in Pinecone:`, pineconeError);
+      throw pineconeError;
+    }
 
     // Store review metadata in database
     const reviewRecords = reviewsData.map((review, index) => ({
@@ -112,8 +178,77 @@ export async function POST(request: NextRequest) {
       data: reviewRecords,
     });
 
-    // Start analysis processing in background
-    analysisService.processAllAnalyses(product.id).catch(console.error);
+    // Process competitors if any
+    if (competitors.length > 0) {
+      for (const competitor of competitors) {
+        // Create competitor record
+        const competitorRecord = await prisma.competitor.create({
+          data: {
+            name: competitor.name,
+            productId: product.id,
+            reviewsFile: competitor.file.name,
+          },
+        });
+
+        // Store competitor reviews in Pinecone
+        const competitorReviewsData = competitor.csvResult.reviews.map(
+          (review) => ({
+            id: "",
+            productId: product.id,
+            competitorId: competitorRecord.id,
+            text: review.text,
+            rating: review.rating,
+            date: review.date,
+            metadata: review.metadata,
+          }),
+        );
+
+        console.log(
+          `🏆 Storing ${competitorReviewsData.length} competitor reviews for: ${competitor.name}`,
+        );
+
+        let competitorPineconeIds: string[];
+        try {
+          competitorPineconeIds = await pineconeService.storeMultipleReviews(
+            competitorReviewsData,
+            userId,
+            brandId,
+            "v1", // First version
+            brand.name, // Brand name for context
+            competitor.name, // Competitor name for context
+          );
+          console.log(
+            `✅ Competitor reviews stored successfully. IDs: ${competitorPineconeIds.length}`,
+          );
+        } catch (competitorPineconeError) {
+          console.error(
+            `❌ Error storing competitor reviews:`,
+            competitorPineconeError,
+          );
+          throw competitorPineconeError;
+        }
+
+        // Store competitor review metadata in database
+        const competitorReviewRecords = competitorReviewsData.map(
+          (review, index) => ({
+            productId: product.id,
+            competitorId: competitorRecord.id,
+            originalText: review.text,
+            rating: review.rating,
+            date: review.date,
+            metadata: review.metadata,
+            pineconeId: competitorPineconeIds[index],
+          }),
+        );
+
+        await prisma.review.createMany({
+          data: competitorReviewRecords,
+        });
+      }
+    }
+
+    // Start analysis processing in background with user context
+    analysisService.processAllAnalyses(product.id, userId).catch(console.error);
 
     return NextResponse.json({
       product,

@@ -1,5 +1,6 @@
 // app/api/validate-csv/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import Papa from "papaparse";
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,11 +11,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    // Simple validation for server environment
+    // Parse CSV with papaparse
     const fileContent = await file.text();
-    const lines = fileContent.split("\n").filter((line) => line.trim());
+    const parseResult = Papa.parse(fileContent, {
+      header: true,
+      skipEmptyLines: true,
+      preview: 6, // Only parse first 6 rows for validation
+      transformHeader: (header) => header.trim().toLowerCase(),
+      transform: (value) => value.trim(),
+    });
 
-    if (lines.length < 2) {
+    if (parseResult.errors.length > 0) {
+      return NextResponse.json({
+        isValid: false,
+        errors: parseResult.errors.map(
+          (e) => `Parse error: ${e.message} at row ${e.row}`,
+        ),
+        preview: [],
+      });
+    }
+
+    if (parseResult.data.length === 0) {
       return NextResponse.json({
         isValid: false,
         errors: ["CSV file must have at least a header row and one data row"],
@@ -22,14 +39,23 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const headers = lines[0]
-      .toLowerCase()
-      .split(",")
-      .map((h) => h.trim().replace(/"/g, ""));
+    // Get headers from parsed data
+    const headers = Object.keys(parseResult.data[0]);
 
     // Check for review text column
     const hasReviewColumn = headers.some((header) =>
-      ["review", "text", "comment", "feedback", "content"].includes(header),
+      [
+        "review",
+        "text",
+        "comment",
+        "feedback",
+        "content",
+        "message",
+        "review_text",
+        "reviewtext",
+        "customer_review",
+        "review_content",
+      ].includes(header),
     );
 
     if (!hasReviewColumn) {
@@ -42,15 +68,8 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Create preview
-    const preview = lines.slice(0, 6).map((line) => {
-      const values = line.split(",").map((v) => v.trim().replace(/"/g, ""));
-      const row: any = {};
-      headers.forEach((header, index) => {
-        row[header] = values[index] || "";
-      });
-      return row;
-    });
+    // Create preview from parsed data
+    const preview = parseResult.data;
 
     return NextResponse.json({
       isValid: true,
