@@ -1,3 +1,4 @@
+// lib/services/pinecone.ts - Enhanced with Product Namespaces
 import { Pinecone } from "@pinecone-database/pinecone";
 import { OpenAI } from "openai";
 import { v4 as uuidv4 } from "uuid";
@@ -20,14 +21,13 @@ export interface ReviewData {
   rating?: number;
   date?: Date;
   metadata?: Record<string, any>;
-  // New fields for versioning
-  analysisVersion?: string; // "v1", "v2", "v3"
+  analysisVersion?: string;
   uploadDate?: Date;
 }
 
 export interface ReviewMetadata {
   productId: string;
-  brandId: string; // Added for brand-level context
+  brandId: string;
   competitorId?: string;
   rating?: number;
   date?: string;
@@ -35,7 +35,6 @@ export interface ReviewMetadata {
   analysisTagged: boolean;
   wordCount: number;
   sentimentScore?: number;
-  // New fields for versioning and chatbot context
   analysisVersion: string;
   uploadDate: string;
   productName?: string;
@@ -49,21 +48,25 @@ class PineconeService {
     this.index = pinecone.Index(indexName);
   }
 
-  // Helper method to get brand namespace
-  private getBrandNamespace(userId: string, brandId: string): string {
-    return `user_${userId}_brand_${brandId}`;
+  // NEW: Product-specific namespace
+  private getProductNamespace(
+    userId: string,
+    brandId: string,
+    productId: string,
+  ): string {
+    return `user_${userId}_brand_${brandId}_product_${productId}`;
   }
 
-  // Helper method to get user namespace (for backward compatibility)
-  private getUserNamespace(userId: string): string {
-    return `user_${userId}`;
+  // Legacy: Brand namespace (for backward compatibility)
+  private getBrandNamespace(userId: string, brandId: string): string {
+    return `user_${userId}_brand_${brandId}`;
   }
 
   async createEmbedding(text: string): Promise<number[]> {
     try {
       const response = await openai.embeddings.create({
         model: "text-embedding-3-small",
-        input: text.replace(/\n/g, " ").substring(0, 8000), // Limit input size
+        input: text.replace(/\n/g, " ").substring(0, 8000),
       });
       return response.data[0].embedding;
     } catch (error) {
@@ -72,10 +75,12 @@ class PineconeService {
     }
   }
 
+  // ENHANCED: Store with product-specific namespace
   async storeReview(
     review: ReviewData,
     userId: string,
     brandId: string,
+    productId: string,
     analysisVersion: string = "v1",
     brandName?: string,
     productName?: string,
@@ -83,7 +88,7 @@ class PineconeService {
     try {
       const pineconeId = uuidv4();
       const embedding = await this.createEmbedding(review.text);
-      const namespace = this.getBrandNamespace(userId, brandId);
+      const namespace = this.getProductNamespace(userId, brandId, productId);
 
       const metadata: ReviewMetadata = {
         productId: review.productId,
@@ -91,7 +96,7 @@ class PineconeService {
         competitorId: review.competitorId,
         rating: review.rating,
         date: review.date?.toISOString(),
-        text: review.text.substring(0, 1000), // Limit text size in metadata
+        text: review.text.substring(0, 1000),
         analysisTagged: false,
         wordCount: review.text.split(" ").length,
         analysisVersion: analysisVersion,
@@ -115,30 +120,29 @@ class PineconeService {
     }
   }
 
+  // ENHANCED: Store multiple reviews with product-specific namespace
   async storeMultipleReviews(
     reviews: ReviewData[],
     userId: string,
     brandId: string,
+    productId: string,
     analysisVersion: string = "v1",
     brandName?: string,
     productName?: string,
   ): Promise<string[]> {
-    console.log(`🔧 DEBUG: Starting storeMultipleReviews`);
+    console.log(
+      `🔧 DEBUG: Starting storeMultipleReviews for product: ${productId}`,
+    );
     console.log(`📊 Reviews count: ${reviews.length}`);
-    console.log(`👤 User ID: ${userId}`);
-    console.log(`🏢 Brand ID: ${brandId}`);
+    console.log(
+      `👤 User: ${userId}, 🏢 Brand: ${brandId}, 📦 Product: ${productId}`,
+    );
 
     const batchSize = 10;
     const pineconeIds: string[] = [];
-    const namespace = this.getBrandNamespace(userId, brandId);
+    const namespace = this.getProductNamespace(userId, brandId, productId);
 
-    console.log(`📁 Namespace: ${namespace}`);
-    console.log(
-      `🔑 Pinecone API Key exists: ${!!process.env.PINECONE_API_KEY}`,
-    );
-    console.log(
-      `📄 Index name: ${process.env.PINECONE_INDEX_NAME || "review-analysis"}`,
-    );
+    console.log(`📁 Product Namespace: ${namespace}`);
 
     for (let i = 0; i < reviews.length; i += batchSize) {
       const batch = reviews.slice(i, i + batchSize);
@@ -202,6 +206,7 @@ class PineconeService {
     return pineconeIds;
   }
 
+  // ENHANCED: Get reviews with product-specific namespace
   async getReviewsForAnalysis(
     productId: string,
     analysisType: string,
@@ -209,16 +214,15 @@ class PineconeService {
     brandId: string,
     limit: number = 100,
     includeCompetitors: boolean = false,
-    analysisVersion?: string, // Optional: get specific version
-    productName?: string, // Optional: product name for better query
+    analysisVersion?: string,
+    productName?: string,
   ): Promise<ReviewMetadata[]> {
     try {
-      // Use smart multi-stage selection for better results
+      const namespace = this.getProductNamespace(userId, brandId, productId);
       return await this.getSmartReviewsForAnalysis(
         productId,
         analysisType,
-        userId,
-        brandId,
+        namespace,
         limit,
         includeCompetitors,
         analysisVersion,
@@ -230,21 +234,17 @@ class PineconeService {
     }
   }
 
-  // New smart selection method with multiple improvements
+  // Enhanced smart selection method
   private async getSmartReviewsForAnalysis(
     productId: string,
     analysisType: string,
-    userId: string,
-    brandId: string,
+    namespace: string,
     limit: number,
     includeCompetitors: boolean,
     analysisVersion?: string,
     productName?: string,
   ): Promise<ReviewMetadata[]> {
-    const namespace = this.getBrandNamespace(userId, brandId);
-
-    // Stage 1: Get a larger pool of diverse reviews
-    const poolSize = Math.min(limit * 3, 500); // Get 3x the needed amount, max 500
+    const poolSize = Math.min(limit * 3, 500);
     const diversePool = await this.getDiverseReviewPool(
       productId,
       namespace,
@@ -253,18 +253,16 @@ class PineconeService {
       analysisVersion,
     );
 
-    // Stage 2: Score and rank reviews based on multiple criteria
     const scoredReviews = await this.scoreReviewsForAnalysis(
       diversePool,
       analysisType,
       productName,
     );
 
-    // Stage 3: Select final reviews with balance constraints
     return this.selectBalancedReviews(scoredReviews, limit, analysisType);
   }
 
-  // Get diverse pool of reviews considering rating distribution and recency
+  // Get diverse pool of reviews
   private async getDiverseReviewPool(
     productId: string,
     namespace: string,
@@ -285,7 +283,6 @@ class PineconeService {
       baseFilter.analysisVersion = { $eq: analysisVersion };
     }
 
-    // Get reviews from each rating category
     const ratingPromises = [1, 2, 3, 4, 5].map(async (rating) => {
       const filter = {
         ...baseFilter,
@@ -306,17 +303,15 @@ class PineconeService {
     return ratingResults.flat();
   }
 
-  // Score reviews based on relevance, length, and analysis-specific criteria
+  // Score reviews for analysis
   private async scoreReviewsForAnalysis(
     reviews: ReviewMetadata[],
     analysisType: string,
     productName?: string,
   ): Promise<(ReviewMetadata & { score: number })[]> {
-    // Create analysis-specific query
     const queryText = this.getAnalysisQueryText(analysisType, productName);
     const queryEmbedding = await this.createEmbedding(queryText);
 
-    // Get all review embeddings for similarity scoring
     const reviewEmbeddings = await Promise.all(
       reviews.map((review) => this.createEmbedding(review.text)),
     );
@@ -325,39 +320,34 @@ class PineconeService {
       .map((review, index) => {
         let score = 0;
 
-        // 1. Semantic similarity score (0-100)
         const similarity = this.cosineSimilarity(
           queryEmbedding,
           reviewEmbeddings[index],
         );
-        score += similarity * 100 * 0.4; // 40% weight
+        score += similarity * 100 * 0.4;
 
-        // 2. Length score - prefer detailed reviews (0-100)
         const wordCount = review.text.split(/\s+/).length;
         const lengthScore = this.getLengthScore(wordCount, analysisType);
-        score += lengthScore * 0.2; // 20% weight
+        score += lengthScore * 0.2;
 
-        // 3. Recency score - prefer newer reviews (0-100)
         const recencyScore = this.getRecencyScore(review.date);
-        score += recencyScore * 0.1; // 10% weight
+        score += recencyScore * 0.1;
 
-        // 4. Rating relevance - some analyses benefit from extreme ratings
         const ratingScore = this.getRatingRelevanceScore(
           review.rating || 3,
           analysisType,
         );
-        score += ratingScore * 0.2; // 20% weight
+        score += ratingScore * 0.2;
 
-        // 5. Keyword boost - bonus for specific keywords
         const keywordScore = this.getKeywordScore(review.text, analysisType);
-        score += keywordScore * 0.1; // 10% weight
+        score += keywordScore * 0.1;
 
         return { ...review, score };
       })
       .sort((a, b) => b.score - a.score);
   }
 
-  // Select balanced set of reviews from scored pool
+  // Select balanced reviews
   private selectBalancedReviews(
     scoredReviews: (ReviewMetadata & { score: number })[],
     limit: number,
@@ -372,9 +362,8 @@ class PineconeService {
       5: 0,
     };
 
-    // Minimum reviews per rating (ensure diversity)
-    const minPerRating = Math.floor(limit / 10); // At least 10% from each rating
-    const maxPerRating = Math.ceil(limit / 3); // At most 33% from any rating
+    const minPerRating = Math.floor(limit / 10);
+    const maxPerRating = Math.ceil(limit / 3);
 
     // First pass: ensure minimum diversity
     for (const review of scoredReviews) {
@@ -385,7 +374,7 @@ class PineconeService {
       }
     }
 
-    // Second pass: fill remaining slots with highest scores
+    // Second pass: fill remaining slots
     for (const review of scoredReviews) {
       const rating = Math.round(review.rating || 3);
       if (selected.length >= limit) break;
@@ -395,11 +384,90 @@ class PineconeService {
       }
     }
 
-    // Remove the score property before returning
     return selected.map(({ score, ...review }) => review);
   }
 
-  // Helper: Calculate cosine similarity between two vectors
+  // NEW: Complete product deletion
+  async deleteProductCompletely(
+    productId: string,
+    userId: string,
+    brandId: string,
+  ): Promise<{ success: boolean; deletedVectors: number; error?: string }> {
+    try {
+      const namespace = this.getProductNamespace(userId, brandId, productId);
+
+      console.log(`🗑️ Deleting entire namespace: ${namespace}`);
+
+      // Get namespace stats first to know how many vectors we're deleting
+      const stats = await this.index.describeIndexStats();
+      const namespaceStats = stats.namespaces?.[namespace];
+      const vectorCount = namespaceStats?.vectorCount || 0;
+
+      if (vectorCount === 0) {
+        console.log(
+          `📭 Namespace ${namespace} is already empty or doesn't exist`,
+        );
+        return { success: true, deletedVectors: 0 };
+      }
+
+      // Delete all vectors in the namespace
+      // The Pinecone SDK has different methods depending on the version
+      try {
+        console.log(
+          `🔄 Attempting to delete all vectors in namespace: ${namespace}`,
+        );
+
+        // Method 1: Try the delete method with deleteAll parameter
+        const namespaceObj = this.index.namespace(namespace);
+        await namespaceObj.delete({
+          deleteAll: true,
+        });
+
+        console.log("✅ Delete operation completed successfully");
+      } catch (deleteError: any) {
+        console.error("First delete attempt failed:", deleteError);
+
+        // Method 2: Try deleteMany if delete doesn't work
+        try {
+          console.log("Trying deleteMany method...");
+          await this.index.namespace(namespace).deleteMany({
+            deleteAll: true,
+          });
+        } catch (deleteManyError: any) {
+          console.error("deleteMany failed:", deleteManyError);
+
+          // Method 3: Try deleteAll as last resort
+          try {
+            console.log("Trying deleteAll method...");
+            await this.index.namespace(namespace).deleteAll();
+          } catch (deleteAllError: any) {
+            console.error("All deletion methods failed:", deleteAllError);
+            throw new Error(
+              `Failed to delete namespace ${namespace}: ${deleteAllError.message}`,
+            );
+          }
+        }
+      }
+
+      console.log(
+        `✅ Successfully deleted all vectors in namespace ${namespace} (${vectorCount} vectors)`,
+      );
+
+      return {
+        success: true,
+        deletedVectors: vectorCount,
+      };
+    } catch (error) {
+      console.error("Error deleting product namespace:", error);
+      return {
+        success: false,
+        deletedVectors: 0,
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
+  }
+
+  // Helper methods (unchanged but included for completeness)
   private cosineSimilarity(vec1: number[], vec2: number[]): number {
     let dotProduct = 0;
     let norm1 = 0;
@@ -414,9 +482,7 @@ class PineconeService {
     return dotProduct / (Math.sqrt(norm1) * Math.sqrt(norm2));
   }
 
-  // Helper: Score based on review length for different analyses
   private getLengthScore(wordCount: number, analysisType: string): number {
-    // Different analyses prefer different review lengths
     const idealLengths: Record<
       string,
       { min: number; ideal: number; max: number }
@@ -453,27 +519,24 @@ class PineconeService {
     );
   }
 
-  // Helper: Score based on review recency
-  private getRecencyScore(date?: Date): number {
-    if (!date) return 50; // Neutral score if no date
+  private getRecencyScore(date?: string): number {
+    if (!date) return 50;
 
     const now = new Date();
     const daysSince =
       (now.getTime() - new Date(date).getTime()) / (1000 * 60 * 60 * 24);
 
-    if (daysSince <= 180) return 100; // Last 6 months
-    if (daysSince <= 360) return 80; // Last year
-    if (daysSince <= 720) return 60; // Last 2 years
-    if (daysSince <= 1095) return 40; // Last 3 years
-    return 20; // Older than 3 years
+    if (daysSince <= 180) return 100;
+    if (daysSince <= 360) return 80;
+    if (daysSince <= 720) return 60;
+    if (daysSince <= 1095) return 40;
+    return 20;
   }
 
-  // Helper: Score rating relevance for different analyses
   private getRatingRelevanceScore(
     rating: number,
     analysisType: string,
   ): number {
-    // Some analyses benefit from extreme ratings
     const extremePreference = [
       "swot",
       "sentiment",
@@ -482,23 +545,19 @@ class PineconeService {
     const balancedPreference = ["personas", "four_w_matrix", "stp"];
 
     if (extremePreference.includes(analysisType)) {
-      // Prefer very positive or very negative
       if (rating <= 2 || rating >= 4.5) return 100;
       if (rating <= 2.5 || rating >= 4) return 70;
-      return 40; // Neutral ratings less valuable
+      return 40;
     }
 
     if (balancedPreference.includes(analysisType)) {
-      // All ratings equally valuable
       return 80;
     }
 
-    // Default: slight preference for detailed reviews (often longer at extremes)
     if (rating <= 2 || rating >= 4.5) return 90;
     return 70;
   }
 
-  // Helper: Keyword scoring for analysis-specific terms
   private getKeywordScore(text: string, analysisType: string): number {
     const keywords: Record<string, string[]> = {
       sentiment: [
@@ -557,166 +616,7 @@ class PineconeService {
       if (lowerText.includes(keyword)) matches++;
     }
 
-    return Math.min(matches * 20, 100); // 20 points per keyword, max 100
-  }
-
-  // NEW: Get all reviews for a brand (for Marketing Strategist Chatbot)
-  async getAllBrandReviews(
-    userId: string,
-    brandId: string,
-    limit: number = 1000,
-    analysisVersion?: string,
-  ): Promise<ReviewMetadata[]> {
-    try {
-      const namespace = this.getBrandNamespace(userId, brandId);
-
-      const filter: Record<string, any> = {
-        brandId: { $eq: brandId },
-      };
-
-      if (analysisVersion) {
-        filter.analysisVersion = { $eq: analysisVersion };
-      }
-
-      const queryResponse = await this.index.namespace(namespace).query({
-        vector: new Array(1536).fill(0), // Dummy vector for metadata-only search
-        filter,
-        topK: limit,
-        includeMetadata: true,
-      });
-
-      return queryResponse.matches?.map((match: any) => match.metadata) || [];
-    } catch (error) {
-      console.error("Error querying all brand reviews:", error);
-      throw error;
-    }
-  }
-
-  // NEW: Get reviews for persona chatbot (across all products in brand)
-  async getPersonaRelevantReviews(
-    userId: string,
-    brandId: string,
-    personaQuery: string,
-    limit: number = 200,
-  ): Promise<ReviewMetadata[]> {
-    try {
-      const namespace = this.getBrandNamespace(userId, brandId);
-      const queryEmbedding = await this.createEmbedding(personaQuery);
-
-      const filter = {
-        brandId: { $eq: brandId },
-      };
-
-      const queryResponse = await this.index.namespace(namespace).query({
-        vector: queryEmbedding,
-        filter,
-        topK: limit,
-        includeMetadata: true,
-      });
-
-      return queryResponse.matches?.map((match: any) => match.metadata) || [];
-    } catch (error) {
-      console.error("Error querying persona reviews:", error);
-      throw error;
-    }
-  }
-
-  // NEW: Get historical comparison data
-  async getHistoricalReviews(
-    productId: string,
-    userId: string,
-    brandId: string,
-    versions: string[], // ["v1", "v2", "v3"]
-  ): Promise<{ [version: string]: ReviewMetadata[] }> {
-    try {
-      const namespace = this.getBrandNamespace(userId, brandId);
-      const results: { [version: string]: ReviewMetadata[] } = {};
-
-      for (const version of versions) {
-        const filter = {
-          productId: { $eq: productId },
-          analysisVersion: { $eq: version },
-        };
-
-        const queryResponse = await this.index.namespace(namespace).query({
-          vector: new Array(1536).fill(0),
-          filter,
-          topK: 500,
-          includeMetadata: true,
-        });
-
-        results[version] =
-          queryResponse.matches?.map((match: any) => match.metadata) || [];
-      }
-
-      return results;
-    } catch (error) {
-      console.error("Error querying historical reviews:", error);
-      throw error;
-    }
-  }
-
-  async getCompetitorReviews(
-    productId: string,
-    competitorIds: string[],
-    userId: string,
-    brandId: string,
-    limit: number = 50,
-  ): Promise<ReviewMetadata[]> {
-    try {
-      const namespace = this.getBrandNamespace(userId, brandId);
-
-      const filter = {
-        productId: { $eq: productId },
-        competitorId: { $in: competitorIds },
-      };
-
-      const queryResponse = await this.index.namespace(namespace).query({
-        vector: new Array(1536).fill(0), // Dummy vector for metadata-only search
-        filter,
-        topK: limit,
-        includeMetadata: true,
-      });
-
-      return queryResponse.matches?.map((match: any) => match.metadata) || [];
-    } catch (error) {
-      console.error("Error querying competitor reviews:", error);
-      throw error;
-    }
-  }
-
-  async getDiverseReviews(
-    productId: string,
-    userId: string,
-    brandId: string,
-    limit: number = 100,
-  ): Promise<ReviewMetadata[]> {
-    try {
-      const namespace = this.getBrandNamespace(userId, brandId);
-
-      // Get reviews with diverse ratings
-      const ratingQueries = [1, 2, 3, 4, 5].map(async (rating) => {
-        const filter = {
-          productId: { $eq: productId },
-          rating: { $gte: rating - 0.5, $lt: rating + 0.5 },
-        };
-
-        const response = await this.index.namespace(namespace).query({
-          vector: new Array(1536).fill(0),
-          filter,
-          topK: Math.floor(limit / 5),
-          includeMetadata: true,
-        });
-
-        return response.matches?.map((match: any) => match.metadata) || [];
-      });
-
-      const results = await Promise.all(ratingQueries);
-      return results.flat();
-    } catch (error) {
-      console.error("Error getting diverse reviews:", error);
-      throw error;
-    }
+    return Math.min(matches * 20, 100);
   }
 
   private getAnalysisQueryText(
@@ -749,7 +649,6 @@ class PineconeService {
       baseQueries[analysisType as keyof typeof baseQueries] ||
       "general product review analysis";
 
-    // Add product context if available
     if (productName) {
       query = `${productName} ${query}`;
     }
@@ -757,74 +656,78 @@ class PineconeService {
     return query;
   }
 
-  async deleteProductReviews(
+  // NEW: Get competitor reviews (updated for product namespace)
+  async getCompetitorReviews(
     productId: string,
+    competitorIds: string[],
     userId: string,
     brandId: string,
-  ): Promise<void> {
+    limit: number = 50,
+  ): Promise<ReviewMetadata[]> {
     try {
-      const namespace = this.getBrandNamespace(userId, brandId);
-      console.log(
-        `Marking product ${productId} reviews for deletion in namespace ${namespace}`,
-      );
-      // Note: Pinecone doesn't have a direct way to delete by metadata
-      // This is a limitation we'll need to work around
-      // In production, you might want to implement a cleanup job
+      const namespace = this.getProductNamespace(userId, brandId, productId);
+
+      const filter = {
+        productId: { $eq: productId },
+        competitorId: { $in: competitorIds },
+      };
+
+      const queryResponse = await this.index.namespace(namespace).query({
+        vector: new Array(1536).fill(0),
+        filter,
+        topK: limit,
+        includeMetadata: true,
+      });
+
+      return queryResponse.matches?.map((match: any) => match.metadata) || [];
     } catch (error) {
-      console.error("Error deleting product reviews:", error);
+      console.error("Error querying competitor reviews:", error);
       throw error;
     }
   }
 
-  // NEW: Get brand namespace stats
-  async getBrandNamespaceStats(
+  // NEW: Get product namespace stats
+  async getProductNamespaceStats(
     userId: string,
     brandId: string,
+    productId: string,
   ): Promise<{
     vectorCount: number;
     namespaceExists: boolean;
-    productBreakdown: { [productId: string]: number };
-    versionBreakdown: { [version: string]: number };
+    namespace: string;
   }> {
     try {
-      const namespace = this.getBrandNamespace(userId, brandId);
-
+      const namespace = this.getProductNamespace(userId, brandId, productId);
       const stats = await this.index.describeIndexStats();
       const namespaceStats = stats.namespaces?.[namespace];
-
-      // Get detailed breakdown by querying
-      const productBreakdown: { [productId: string]: number } = {};
-      const versionBreakdown: { [version: string]: number } = {};
-
-      // This would require additional queries to get detailed breakdowns
-      // Implementation depends on your specific needs
 
       return {
         vectorCount: namespaceStats?.vectorCount || 0,
         namespaceExists: !!namespaceStats,
-        productBreakdown,
-        versionBreakdown,
+        namespace,
       };
     } catch (error) {
-      console.error("Error getting brand namespace stats:", error);
+      console.error("Error getting product namespace stats:", error);
       return {
         vectorCount: 0,
         namespaceExists: false,
-        productBreakdown: {},
-        versionBreakdown: {},
+        namespace: this.getProductNamespace(userId, brandId, productId),
       };
     }
   }
 
-  // NEW: List all brand namespaces for a user
-  async listUserBrandNamespaces(userId: string): Promise<string[]> {
+  // NEW: List all product namespaces for a brand
+  async listBrandProductNamespaces(
+    userId: string,
+    brandId: string,
+  ): Promise<string[]> {
     try {
       const stats = await this.index.describeIndexStats();
       const namespaces = Object.keys(stats.namespaces || {});
-      const userPrefix = `user_${userId}_brand_`;
-      return namespaces.filter((ns) => ns.startsWith(userPrefix));
+      const brandProductPrefix = `user_${userId}_brand_${brandId}_product_`;
+      return namespaces.filter((ns) => ns.startsWith(brandProductPrefix));
     } catch (error) {
-      console.error("Error listing brand namespaces:", error);
+      console.error("Error listing brand product namespaces:", error);
       return [];
     }
   }

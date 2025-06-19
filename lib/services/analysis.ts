@@ -1,5 +1,4 @@
-// lib/services/analysis.ts
-
+// lib/services/analysis.ts - Updated for Product Namespaces
 import { prisma } from "../prisma";
 import { pineconeService } from "./pinecone";
 import { openaiService } from "./openai";
@@ -114,16 +113,16 @@ class AnalysisProcessingService {
             analysesToRun.length,
           );
 
-          // Get reviews for this specific analysis with user and brand context
+          // UPDATED: Get reviews with product-specific context
           const reviews = await pineconeService.getReviewsForAnalysis(
             productId,
             analysisType,
-            userId, // Pass userId for namespace isolation
-            product.brand.id, // Pass brandId for brand-level namespace
+            userId,
+            product.brand.id,
             this.getOptimalReviewCount(analysisType),
             false,
-            undefined, // No specific version
-            product.name, // Pass product name for better query context
+            undefined,
+            product.name,
           );
 
           if (reviews.length === 0) {
@@ -138,8 +137,8 @@ class AnalysisProcessingService {
             competitorReviews = await pineconeService.getCompetitorReviews(
               productId,
               competitorIds,
-              userId, // Pass userId for namespace isolation
-              product.brand.id, // Pass brandId for brand-level namespace
+              userId,
+              product.brand.id,
               50,
             );
           }
@@ -299,16 +298,16 @@ class AnalysisProcessingService {
         throw new Error("Unauthorized: Product does not belong to user");
       }
 
-      // Get reviews for this specific analysis with user and brand context
+      // UPDATED: Get reviews with product-specific context
       const reviews = await pineconeService.getReviewsForAnalysis(
         productId,
         analysisType,
-        userId, // Pass userId for namespace isolation
-        product.brand.id, // Pass brandId for brand-level namespace
+        userId,
+        product.brand.id,
         this.getOptimalReviewCount(analysisType),
         false,
-        undefined, // No specific version
-        product.name, // Pass product name for better query context
+        undefined,
+        product.name,
       );
 
       if (reviews.length === 0) {
@@ -322,8 +321,8 @@ class AnalysisProcessingService {
         competitorReviews = await pineconeService.getCompetitorReviews(
           productId,
           competitorIds,
-          userId, // Pass userId for namespace isolation
-          product.brand.id, // Pass brandId for brand-level namespace
+          userId,
+          product.brand.id,
           50,
         );
       }

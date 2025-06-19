@@ -1,4 +1,4 @@
-// app/api/products/route-with-competitors.ts
+// app/api/products/route.ts - Updated to use product namespaces
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -87,7 +87,6 @@ export async function POST(request: NextRequest) {
       const competitorFile = formData.get(`competitorFile_${i}`) as File;
 
       if (competitorName && competitorFile) {
-        // Validate competitor CSV
         const competitorValidation =
           await csvService.validateCSVStructure(competitorFile);
         if (!competitorValidation.isValid) {
@@ -100,7 +99,6 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // Process competitor CSV
         const competitorCsvResult = await csvService.processCSV(competitorFile);
         if (competitorCsvResult.validRows === 0) {
           return NextResponse.json(
@@ -131,7 +129,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Store main product reviews in Pinecone
+    // Store main product reviews in Pinecone with NEW product-specific namespace
     const reviewsData = csvResult.reviews.map((review) => ({
       id: "",
       productId: product.id,
@@ -144,17 +142,21 @@ export async function POST(request: NextRequest) {
     console.log(
       `🚀 About to store ${reviewsData.length} reviews in Pinecone for product: ${product.id}`,
     );
-    console.log(`👤 User: ${userId}, 🏢 Brand: ${brandId} (${brand.name})`);
+    console.log(
+      `👤 User: ${userId}, 🏢 Brand: ${brandId} (${brand.name}), 📦 Product: ${product.id}`,
+    );
 
     let pineconeIds: string[];
     try {
+      // UPDATED: Now using product-specific namespace
       pineconeIds = await pineconeService.storeMultipleReviews(
         reviewsData,
         userId,
         brandId,
-        "v1", // First version
-        brand.name, // Brand name for context
-        name, // Product name for context
+        product.id, // NEW: Pass product ID for separate namespace
+        "v1",
+        brand.name,
+        name,
       );
       console.log(
         `✅ Successfully stored reviews. Pinecone IDs count: ${pineconeIds.length}`,
@@ -181,7 +183,6 @@ export async function POST(request: NextRequest) {
     // Process competitors if any
     if (competitors.length > 0) {
       for (const competitor of competitors) {
-        // Create competitor record
         const competitorRecord = await prisma.competitor.create({
           data: {
             name: competitor.name,
@@ -190,7 +191,6 @@ export async function POST(request: NextRequest) {
           },
         });
 
-        // Store competitor reviews in Pinecone
         const competitorReviewsData = competitor.csvResult.reviews.map(
           (review) => ({
             id: "",
@@ -209,13 +209,15 @@ export async function POST(request: NextRequest) {
 
         let competitorPineconeIds: string[];
         try {
+          // UPDATED: Now using product-specific namespace for competitors too
           competitorPineconeIds = await pineconeService.storeMultipleReviews(
             competitorReviewsData,
             userId,
             brandId,
-            "v1", // First version
-            brand.name, // Brand name for context
-            competitor.name, // Competitor name for context
+            product.id, // NEW: Pass product ID
+            "v1",
+            brand.name,
+            competitor.name,
           );
           console.log(
             `✅ Competitor reviews stored successfully. IDs: ${competitorPineconeIds.length}`,
@@ -228,7 +230,6 @@ export async function POST(request: NextRequest) {
           throw competitorPineconeError;
         }
 
-        // Store competitor review metadata in database
         const competitorReviewRecords = competitorReviewsData.map(
           (review, index) => ({
             productId: product.id,

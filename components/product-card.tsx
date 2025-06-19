@@ -3,7 +3,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -20,7 +19,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
+import { DeleteProductDialog } from "@/components/delete-product-dialog";
 import { formatDate } from "@/lib/utils";
 import {
   Package,
@@ -59,9 +58,7 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, brandName }: ProductCardProps) {
-  const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const router = useRouter();
 
   const completedAnalyses = product.analyses.filter(
     (a) => a.status === "completed",
@@ -70,26 +67,6 @@ export function ProductCard({ product, brandName }: ProductCardProps) {
   const completionPercentage = Math.round(
     (completedAnalyses / totalExpectedAnalyses) * 100,
   );
-
-  const handleDelete = async () => {
-    setIsDeleting(true);
-    try {
-      const response = await fetch(`/api/products/${product.id}`, {
-        method: "DELETE",
-      });
-
-      if (response.ok) {
-        router.refresh();
-      } else {
-        console.error("Failed to delete product");
-      }
-    } catch (error) {
-      console.error("Error deleting product:", error);
-    } finally {
-      setIsDeleting(false);
-      setShowDeleteDialog(false);
-    }
-  };
 
   const getStatusColor = () => {
     if (product.isProcessing) return "text-blue-600";
@@ -246,13 +223,18 @@ export function ProductCard({ product, brandName }: ProductCardProps) {
         </CardContent>
       </Card>
 
-      <DeleteConfirmDialog
+      <DeleteProductDialog
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
-        onConfirm={handleDelete}
-        isLoading={isDeleting}
-        title="Delete Product"
-        description={`Are you sure you want to delete "${product.name}"? This will permanently delete the product and all its analyses. This action cannot be undone.`}
+        product={{
+          id: product.id,
+          name: product.name,
+          brand: { name: brandName },
+          reviewsCount: product.reviewsCount,
+          analyses: product.analyses,
+          competitors: product.competitors,
+        }}
+        redirectPath="stay" // Stay on current page (brand page)
       />
     </>
   );

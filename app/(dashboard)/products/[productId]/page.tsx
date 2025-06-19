@@ -1,4 +1,4 @@
-// app/(dashboard)/products/[productId]/page.tsx
+// app/(dashboard)/products/[productId]/page.tsx - Updated with Delete Button
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
@@ -26,6 +26,7 @@ import { CustomerJourney } from "@/components/analysis/customer-journey";
 import { CustomerPersonas } from "@/components/analysis/customer-personas";
 import { CompetitionAnalysis } from "@/components/analysis/competition-analysis";
 import { StrategicRecommendations } from "@/components/analysis/strategic-recommendations";
+import { ProductActions } from "@/components/product-actions";
 import { formatDate } from "@/lib/utils";
 import {
   ArrowLeft,
@@ -35,6 +36,8 @@ import {
   RefreshCw,
   Users,
   Building2,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 
 async function getProduct(productId: string, userId: string) {
@@ -88,6 +91,8 @@ export default async function ProductAnalysisPage({
     (completedAnalyses / expectedAnalyses) * 100,
   );
 
+  const hasAnalysisData = completedAnalyses > 0;
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -116,14 +121,17 @@ export default async function ProductAnalysisPage({
             </div>
           </div>
         </div>
-        <div className="flex space-x-2">
+
+        {/* Action Buttons */}
+        <div className="flex items-center space-x-2">
           <Button variant="outline" size="sm" asChild>
             <Link href={`/products/${product.id}/competitors`}>
               <Users className="h-4 w-4 mr-2" />
               Manage Competitors
             </Link>
           </Button>
-          {completionPercentage > 0 && (
+
+          {hasAnalysisData && (
             <Button variant="outline" size="sm" asChild>
               <Link href={`/products/${product.id}/export`}>
                 <Download className="h-4 w-4 mr-2" />
@@ -131,6 +139,9 @@ export default async function ProductAnalysisPage({
               </Link>
             </Button>
           )}
+
+          {/* Product Actions Component (includes delete) */}
+          <ProductActions product={product} />
         </div>
       </div>
 
@@ -167,103 +178,123 @@ export default async function ProductAnalysisPage({
         </CardContent>
       </Card>
 
-      {/* Analysis Tabs */}
-      <Card>
-        <CardContent className="p-0">
-          <Tabs defaultValue="product_description" className="w-full">
-            <TabsList className="w-full h-auto flex-wrap justify-start gap-1 p-1 bg-gray-50">
-              <TabsTrigger value="product_description" className="text-xs">
-                Product Description
-              </TabsTrigger>
-              <TabsTrigger value="sentiment" className="text-xs">
-                Sentiment
-              </TabsTrigger>
-              <TabsTrigger value="voice_of_customer" className="text-xs">
-                Voice of Customer
-              </TabsTrigger>
-              <TabsTrigger value="four_w_matrix" className="text-xs">
-                4W Matrix
-              </TabsTrigger>
-              <TabsTrigger value="jtbd" className="text-xs">
-                Jobs to be Done
-              </TabsTrigger>
-              <TabsTrigger value="stp" className="text-xs">
-                STP Analysis
-              </TabsTrigger>
-              <TabsTrigger value="swot" className="text-xs">
-                SWOT
-              </TabsTrigger>
-              <TabsTrigger value="customer_journey" className="text-xs">
-                Customer Journey
-              </TabsTrigger>
-              <TabsTrigger value="personas" className="text-xs">
-                Personas
-              </TabsTrigger>
-              {hasCompetitors && (
-                <TabsTrigger value="competition" className="text-xs">
-                  Competition
-                </TabsTrigger>
-              )}
-              <TabsTrigger
-                value="strategic_recommendations"
-                className="text-xs"
-              >
-                Recommendations
-              </TabsTrigger>
-            </TabsList>
-
-            <div className="p-6">
-              <TabsContent value="product_description">
-                <ProductDescription analysis={analyses.product_description} />
-              </TabsContent>
-
-              <TabsContent value="sentiment">
-                <SentimentAnalysis analysis={analyses.sentiment} />
-              </TabsContent>
-
-              <TabsContent value="voice_of_customer">
-                <VoiceOfCustomer analysis={analyses.voice_of_customer} />
-              </TabsContent>
-
-              <TabsContent value="four_w_matrix">
-                <FourWMatrix analysis={analyses.four_w_matrix} />
-              </TabsContent>
-
-              <TabsContent value="jtbd">
-                <JTBDAnalysis analysis={analyses.jtbd} />
-              </TabsContent>
-
-              <TabsContent value="stp">
-                <STPAnalysis analysis={analyses.stp} />
-              </TabsContent>
-
-              <TabsContent value="swot">
-                <SWOTAnalysis analysis={analyses.swot} />
-              </TabsContent>
-
-              <TabsContent value="customer_journey">
-                <CustomerJourney analysis={analyses.customer_journey} />
-              </TabsContent>
-
-              <TabsContent value="personas">
-                <CustomerPersonas analysis={analyses.personas} />
-              </TabsContent>
-
-              {hasCompetitors && (
-                <TabsContent value="competition">
-                  <CompetitionAnalysis analysis={analyses.competition} />
-                </TabsContent>
-              )}
-
-              <TabsContent value="strategic_recommendations">
-                <StrategicRecommendations
-                  analysis={analyses.strategic_recommendations}
-                />
-              </TabsContent>
+      {/* Warning if no analyses completed */}
+      {!hasAnalysisData && (
+        <Card className="border-yellow-200 bg-yellow-50">
+          <CardContent className="pt-6">
+            <div className="flex items-center space-x-2 text-yellow-800">
+              <AlertTriangle className="h-5 w-5" />
+              <div>
+                <p className="font-medium">No Analysis Data Available</p>
+                <p className="text-sm">
+                  Analysis is still processing or hasn't started yet. Please
+                  wait for the analysis to complete before viewing results.
+                </p>
+              </div>
             </div>
-          </Tabs>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Analysis Tabs - Only show if we have data */}
+      {hasAnalysisData && (
+        <Card>
+          <CardContent className="p-0">
+            <Tabs defaultValue="product_description" className="w-full">
+              <TabsList className="w-full h-auto flex-wrap justify-start gap-1 p-1 bg-gray-50">
+                <TabsTrigger value="product_description" className="text-xs">
+                  Product Description
+                </TabsTrigger>
+                <TabsTrigger value="sentiment" className="text-xs">
+                  Sentiment
+                </TabsTrigger>
+                <TabsTrigger value="voice_of_customer" className="text-xs">
+                  Voice of Customer
+                </TabsTrigger>
+                <TabsTrigger value="four_w_matrix" className="text-xs">
+                  4W Matrix
+                </TabsTrigger>
+                <TabsTrigger value="jtbd" className="text-xs">
+                  Jobs to be Done
+                </TabsTrigger>
+                <TabsTrigger value="stp" className="text-xs">
+                  STP Analysis
+                </TabsTrigger>
+                <TabsTrigger value="swot" className="text-xs">
+                  SWOT
+                </TabsTrigger>
+                <TabsTrigger value="customer_journey" className="text-xs">
+                  Customer Journey
+                </TabsTrigger>
+                <TabsTrigger value="personas" className="text-xs">
+                  Personas
+                </TabsTrigger>
+                {hasCompetitors && (
+                  <TabsTrigger value="competition" className="text-xs">
+                    Competition
+                  </TabsTrigger>
+                )}
+                <TabsTrigger
+                  value="strategic_recommendations"
+                  className="text-xs"
+                >
+                  Recommendations
+                </TabsTrigger>
+              </TabsList>
+
+              <div className="p-6">
+                <TabsContent value="product_description">
+                  <ProductDescription analysis={analyses.product_description} />
+                </TabsContent>
+
+                <TabsContent value="sentiment">
+                  <SentimentAnalysis analysis={analyses.sentiment} />
+                </TabsContent>
+
+                <TabsContent value="voice_of_customer">
+                  <VoiceOfCustomer analysis={analyses.voice_of_customer} />
+                </TabsContent>
+
+                <TabsContent value="four_w_matrix">
+                  <FourWMatrix analysis={analyses.four_w_matrix} />
+                </TabsContent>
+
+                <TabsContent value="jtbd">
+                  <JTBDAnalysis analysis={analyses.jtbd} />
+                </TabsContent>
+
+                <TabsContent value="stp">
+                  <STPAnalysis analysis={analyses.stp} />
+                </TabsContent>
+
+                <TabsContent value="swot">
+                  <SWOTAnalysis analysis={analyses.swot} />
+                </TabsContent>
+
+                <TabsContent value="customer_journey">
+                  <CustomerJourney analysis={analyses.customer_journey} />
+                </TabsContent>
+
+                <TabsContent value="personas">
+                  <CustomerPersonas analysis={analyses.personas} />
+                </TabsContent>
+
+                {hasCompetitors && (
+                  <TabsContent value="competition">
+                    <CompetitionAnalysis analysis={analyses.competition} />
+                  </TabsContent>
+                )}
+
+                <TabsContent value="strategic_recommendations">
+                  <StrategicRecommendations
+                    analysis={analyses.strategic_recommendations}
+                  />
+                </TabsContent>
+              </div>
+            </Tabs>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
