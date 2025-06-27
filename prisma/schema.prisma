@@ -38,16 +38,18 @@ model Session {
 }
 
 model User {
-  id            String    @id @default(cuid())
+  id            String         @id @default(cuid())
   name          String?
-  email         String    @unique
+  email         String         @unique
   emailVerified DateTime?
+  password      String?        // Hashed password
   image         String?
   accounts      Account[]
   sessions      Session[]
   brands        Brand[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  conversations Conversation[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 }
 
 model VerificationToken {
@@ -59,29 +61,31 @@ model VerificationToken {
 }
 
 model Brand {
-  id        String    @id @default(cuid())
-  name      String
-  userId    String
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  products  Product[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id            String         @id @default(cuid())
+  name          String
+  userId        String
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products      Product[]
+  conversations Conversation[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
   @@unique([userId, name])
 }
 
 model Product {
-  id            String       @id @default(cuid())
+  id            String         @id @default(cuid())
   name          String
   brandId       String
-  brand         Brand        @relation(fields: [brandId], references: [id], onDelete: Cascade)
-  reviewsFile   String       // Original CSV filename
-  reviewsCount  Int          @default(0)
+  brand         Brand          @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  reviewsFile   String         // Original CSV filename
+  reviewsCount  Int            @default(0)
   competitors   Competitor[]
   analyses      Analysis[]
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  isProcessing  Boolean      @default(false)
+  conversations Conversation[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  isProcessing  Boolean        @default(false)
 
   @@unique([brandId, name])
 }
@@ -128,4 +132,36 @@ model Review {
   @@index([competitorId])
   @@index([rating])
   @@index([date])
+}
+
+model Conversation {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  brandId      String?
+  brand        Brand?    @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  productId    String?
+  product      Product?  @relation(fields: [productId], references: [id], onDelete: SetNull)
+  title        String
+  context      Json?     // Cached context data
+  messages     Message[]
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([brandId])
+  @@index([productId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String       // 'user' or 'assistant'
+  content        String       @db.Text
+  metadata       Json?        // Additional data like sources, confidence, etc.
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId])
 }

@@ -26,7 +26,15 @@ export async function POST(request: Request) {
       );
     }
 
-    // Hash password (for demo, we'll keep it simple)
+    // Validate password strength
+    if (password.length < 8) {
+      return NextResponse.json(
+        { error: "Password must be at least 8 characters long" },
+        { status: 400 },
+      );
+    }
+
+    // Hash password
     const hashedPassword = await hash(password, 12);
 
     // Create user
@@ -34,8 +42,7 @@ export async function POST(request: Request) {
       data: {
         name,
         email,
-        // Note: In this simplified version, we're not storing password
-        // In production, add a password field to your schema
+        password: hashedPassword,
       },
     });
 

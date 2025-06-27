@@ -40,9 +40,9 @@ export function Navigation() {
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
               <Link href="/dashboard" className="flex items-center space-x-2">
-                <BarChart3 className="h-8 w-8 text-blue-600" />
+                <BarChart3 className="h-8 w-8 text-[#5546e1]" />
                 <span className="font-bold text-xl text-gray-900">
-                  ReviewAI
+                  RevuIntel
                 </span>
               </Link>
             </div>

@@ -58,7 +58,10 @@ export function AnalysisStatus({
       );
       if (response.ok) {
         const data = await response.json();
-        // Update analyses would need to be implemented
+        // Update the current analyses state with the fetched data
+        if (data.analyses) {
+          setCurrentAnalyses(data.analyses);
+        }
       }
     } catch (error) {
       console.error("Error refreshing status:", error);

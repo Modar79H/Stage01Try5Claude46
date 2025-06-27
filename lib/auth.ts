@@ -32,15 +32,15 @@ export const authOptions: NextAuthOptions = {
           },
         });
 
-        if (!user) {
+        if (!user || !user.password) {
           return null;
         }
 
-        // For demo purposes, we'll create a simple password check
-        // In production, you'd want proper password hashing
-        const isPasswordValid =
-          credentials.password === "password123" ||
-          (await compare(credentials.password, user.email)); // Simplified check
+        // Compare the provided password with the hashed password
+        const isPasswordValid = await compare(
+          credentials.password,
+          user.password,
+        );
 
         if (!isPasswordValid) {
           return null;

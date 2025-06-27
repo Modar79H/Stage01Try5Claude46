@@ -82,25 +82,25 @@ export function SWOTChart({ data }: SWOTChartProps) {
       key: "strengths",
       title: "Strengths",
       data: data.strengths || [],
-      colors: ["#10B981", "#059669", "#047857", "#065F46", "#064E3B"],
+      colors: ["#5546e1", "#6b59e6", "#4a3ddb", "#7c6fea", "#3d2fd5"],
     },
     {
       key: "weaknesses",
       title: "Weaknesses",
       data: data.weaknesses || [],
-      colors: ["#EF4444", "#DC2626", "#B91C1C", "#991B1B", "#7F1D1D"],
+      colors: ["#8f84ed", "#a199f0", "#b3aef3", "#6b59e6", "#7c6fea"],
     },
     {
       key: "opportunities",
       title: "Opportunities",
       data: data.opportunities || [],
-      colors: ["#3B82F6", "#2563EB", "#1D4ED8", "#1E40AF", "#1E3A8A"],
+      colors: ["#2e1ecf", "#1e0cc9", "#4a3ddb", "#3d2fd5", "#5546e1"],
     },
     {
       key: "threats",
       title: "Threats",
       data: data.threats || [],
-      colors: ["#F59E0B", "#D97706", "#B45309", "#92400E", "#78350F"],
+      colors: ["#6b59e6", "#7c6fea", "#8f84ed", "#a199f0", "#b3aef3"],
     },
   ];
 

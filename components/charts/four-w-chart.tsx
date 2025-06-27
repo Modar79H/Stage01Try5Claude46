@@ -20,16 +20,16 @@ export function FourWChart({ data }: FourWChartProps) {
   const chartRef = useRef<ChartJS<"doughnut", number[], string>>(null);
 
   const colors = [
-    "#3B82F6",
-    "#10B981",
-    "#F59E0B",
-    "#EF4444",
-    "#8B5CF6",
-    "#06B6D4",
-    "#84CC16",
-    "#F97316",
-    "#EC4899",
-    "#6366F1",
+    "#5546e1",
+    "#6b59e6",
+    "#4a3ddb",
+    "#7c6fea",
+    "#3d2fd5",
+    "#8f84ed",
+    "#2e1ecf",
+    "#a199f0",
+    "#1e0cc9",
+    "#b3aef3",
   ];
 
   const createChartData = (

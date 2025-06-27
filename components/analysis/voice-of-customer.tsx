@@ -45,57 +45,142 @@ export function VoiceOfCustomer({ analysis }: VoiceOfCustomerProps) {
     const keywords = analysis.data.voice_of_customer.keywords;
     const maxFreq = Math.max(...keywords.map((k) => k.frequency));
 
-    // Set canvas size
-    canvas.width = canvas.offsetWidth * 2;
-    canvas.height = 600;
+    // Set canvas size with better resolution
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * 2;
+    canvas.height = 800;
     ctx.scale(2, 2);
 
-    // Clear canvas
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Clear canvas with background
+    ctx.fillStyle = "#f9f9f9";
+    ctx.fillRect(0, 0, rect.width, 400);
 
-    // Colors for words
+    // Colors using the new brand palette with variations
+    const baseColor = "#5546e1";
     const colors = [
-      "#3B82F6",
-      "#10B981",
-      "#F59E0B",
-      "#EF4444",
-      "#8B5CF6",
-      "#06B6D4",
-      "#84CC16",
-      "#F97316",
-      "#EC4899",
-      "#6366F1",
+      "#5546e1", // Main brand color
+      "#6b59e6", // Lighter variant
+      "#4a3ddb", // Darker variant
+      "#7c6fea", // Even lighter
+      "#3d2fd5", // Even darker
+      "#8f84ed", // Very light
+      "#2e1ecf", // Very dark
+      "#a199f0", // Extremely light
+      "#1e0cc9", // Extremely dark
+      "#b3aef3", // Pastel variant
     ];
 
-    // Sort keywords by frequency
+    // Sort keywords by frequency and take top 40
     const sortedKeywords = keywords
       .sort((a, b) => b.frequency - a.frequency)
-      .slice(0, 50);
+      .slice(0, 40);
 
-    // Simple word cloud layout
-    const centerX = canvas.offsetWidth / 2;
-    const centerY = 300;
+    // Improved font sizing with better scaling
+    const getFontSize = (frequency: number) => {
+      const ratio = frequency / maxFreq;
+      return Math.max(14, Math.min(60, ratio * 60 + 14));
+    };
+
+    // Better positioning algorithm - grid with spiral fallback
+    const centerX = rect.width / 2;
+    const centerY = 200;
+    const placedWords: Array<{
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    }> = [];
+
+    const checkCollision = (
+      x: number,
+      y: number,
+      width: number,
+      height: number,
+    ) => {
+      return placedWords.some(
+        (placed) =>
+          x < placed.x + placed.width + 5 &&
+          x + width + 5 > placed.x &&
+          y < placed.y + placed.height + 5 &&
+          y + height + 5 > placed.y,
+      );
+    };
 
     sortedKeywords.forEach((keyword, index) => {
-      const fontSize = Math.max(
-        12,
-        Math.min(48, (keyword.frequency / maxFreq) * 48),
-      );
+      const fontSize = getFontSize(keyword.frequency);
       const color = colors[index % colors.length];
 
       ctx.fillStyle = color;
-      ctx.font = `${fontSize}px Arial`;
+      ctx.font = `bold ${fontSize}px 'Segoe UI', Arial, sans-serif`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
 
-      // Simple spiral positioning
-      const angle = index * 0.5;
-      const radius = index * 8 + 20;
-      const x = centerX + Math.cos(angle) * radius;
-      const y = centerY + Math.sin(angle) * radius;
+      // Measure text
+      const metrics = ctx.measureText(keyword.word);
+      const textWidth = metrics.width;
+      const textHeight = fontSize;
 
+      let placed = false;
+      let attempts = 0;
+      let x = centerX;
+      let y = centerY;
+
+      // Try to place word without collision
+      while (!placed && attempts < 100) {
+        if (attempts === 0) {
+          // First word at center
+          x = centerX;
+          y = centerY;
+        } else {
+          // Spiral placement
+          const angle = attempts * 0.3;
+          const radius = attempts * 4 + 20;
+          x = centerX + Math.cos(angle) * radius;
+          y = centerY + Math.sin(angle) * radius * 0.6; // Flatten the spiral vertically
+        }
+
+        // Check bounds
+        if (
+          x - textWidth / 2 > 10 &&
+          x + textWidth / 2 < rect.width - 10 &&
+          y - textHeight / 2 > 10 &&
+          y + textHeight / 2 < 390
+        ) {
+          if (
+            !checkCollision(
+              x - textWidth / 2,
+              y - textHeight / 2,
+              textWidth,
+              textHeight,
+            )
+          ) {
+            placed = true;
+            placedWords.push({
+              x: x - textWidth / 2,
+              y: y - textHeight / 2,
+              width: textWidth,
+              height: textHeight,
+            });
+          }
+        }
+        attempts++;
+      }
+
+      // Draw the word
       ctx.fillText(keyword.word, x, y);
+
+      // Add subtle shadow for better readability
+      ctx.shadowColor = "rgba(0,0,0,0.1)";
+      ctx.shadowBlur = 2;
+      ctx.shadowOffsetX = 1;
+      ctx.shadowOffsetY = 1;
+      ctx.fillText(keyword.word, x, y);
+
+      // Reset shadow
+      ctx.shadowColor = "transparent";
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
     });
   };
 
@@ -122,7 +207,7 @@ export function VoiceOfCustomer({ analysis }: VoiceOfCustomerProps) {
           ) : (
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#5546e1] mx-auto mb-4"></div>
                 <p className="text-gray-600">Analysis in progress...</p>
               </div>
             </div>
@@ -168,7 +253,7 @@ export function VoiceOfCustomer({ analysis }: VoiceOfCustomerProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="bg-white border rounded-lg p-4">
+          <div className="bg-[#f9f9f9] border rounded-lg p-4">
             <canvas
               ref={canvasRef}
               className="w-full"
@@ -195,7 +280,7 @@ export function VoiceOfCustomer({ analysis }: VoiceOfCustomerProps) {
               >
                 <span className="font-medium">{keyword.word}</span>
                 <div className="flex items-center space-x-2">
-                  <div className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
+                  <div className="bg-[#5546e1] text-white text-xs px-2 py-1 rounded-full">
                     {keyword.frequency}
                   </div>
                 </div>

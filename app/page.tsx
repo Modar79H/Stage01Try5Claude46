@@ -34,8 +34,8 @@ export default async function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center space-x-2">
-              <BarChart3 className="h-8 w-8 text-blue-600" />
-              <span className="font-bold text-2xl text-gray-900">ReviewAI</span>
+              <BarChart3 className="h-8 w-8 text-[#5546e1]" />
+              <span className="font-bold text-2xl text-gray-900">RevuIntel</span>
             </div>
             <div className="flex items-center space-x-4">
               <Button variant="ghost" asChild>
@@ -204,15 +204,15 @@ export default async function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
+      <footer className="bg-[#1f2937] text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <BarChart3 className="h-6 w-6" />
-              <span className="font-bold text-lg">ReviewAI</span>
+              <span className="font-bold text-lg">RevuIntel</span>
             </div>
             <p className="text-gray-400">
-              © 2024 ReviewAI. All rights reserved.
+              © 2024 RevuIntel. All rights reserved.
             </p>
           </div>
         </div>

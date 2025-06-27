@@ -114,8 +114,8 @@ export default function SignUpPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center space-x-2">
-            <BarChart3 className="h-8 w-8 text-blue-600" />
-            <span className="font-bold text-2xl text-gray-900">ReviewAI</span>
+            <BarChart3 className="h-8 w-8 text-[#5546e1]" />
+            <span className="font-bold text-2xl text-gray-900">RevuIntel</span>
           </Link>
         </div>
 

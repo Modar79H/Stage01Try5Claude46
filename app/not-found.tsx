@@ -25,14 +25,14 @@ export default function NotFound() {
         {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center space-x-2">
-            <BarChart3 className="h-8 w-8 text-blue-600" />
-            <span className="font-bold text-2xl text-gray-900">ReviewAI</span>
+            <BarChart3 className="h-8 w-8 text-[#5546e1]" />
+            <span className="font-bold text-2xl text-gray-900">RevuIntel</span>
           </Link>
         </div>
 
         <Card>
           <CardHeader className="text-center">
-            <div className="text-6xl font-bold text-blue-600 mb-4">404</div>
+            <div className="text-6xl font-bold text-[#5546e1] mb-4">404</div>
             <CardTitle className="text-2xl">Page Not Found</CardTitle>
             <CardDescription>
               The page you're looking for doesn't exist or has been moved.

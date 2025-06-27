@@ -40,9 +40,9 @@ export function JTBDChart({ data }: JTBDChartProps) {
     const generateColors = (base: string, count: number) => {
       const colors = [];
       const hues = {
-        "#3B82F6": [210, 220, 200], // Blue variations
-        "#EF4444": [0, 10, 350], // Red variations
-        "#10B981": [150, 140, 160], // Green variations
+        "#5546e1": [251, 261, 241], // Purple variations
+        "#6b59e6": [251, 261, 241], // Purple variations
+        "#4a3ddb": [251, 261, 241], // Purple variations
       };
 
       const baseHues = hues[base as keyof typeof hues] || [210, 220, 200];
@@ -116,19 +116,19 @@ export function JTBDChart({ data }: JTBDChartProps) {
       key: "functional_jobs",
       title: "Functional Jobs",
       data: data.functional_jobs || [],
-      color: "#3B82F6",
+      color: "#5546e1",
     },
     {
       key: "emotional_jobs",
       title: "Emotional Jobs",
       data: data.emotional_jobs || [],
-      color: "#EF4444",
+      color: "#6b59e6",
     },
     {
       key: "social_jobs",
       title: "Social Jobs",
       data: data.social_jobs || [],
-      color: "#10B981",
+      color: "#4a3ddb",
     },
   ];
 

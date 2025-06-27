@@ -468,6 +468,14 @@ class AnalysisProcessingService {
     completedAnalyses: string[];
     failedAnalyses: string[];
     totalAnalyses: number;
+    analyses: Array<{
+      type: string;
+      status: string;
+      error?: string | null;
+    }>;
+    product: {
+      isProcessing: boolean;
+    };
   }> {
     const product = await prisma.product.findUnique({
       where: { id: productId },
@@ -505,6 +513,14 @@ class AnalysisProcessingService {
       completedAnalyses,
       failedAnalyses,
       totalAnalyses: expectedAnalyses.length,
+      analyses: product.analyses.map((a) => ({
+        type: a.type,
+        status: a.status,
+        error: a.error,
+      })),
+      product: {
+        isProcessing: product.isProcessing,
+      },
     };
   }
 }
