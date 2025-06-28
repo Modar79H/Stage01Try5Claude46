@@ -1,4 +1,4 @@
-// app/api/products/[productId]/export/route.ts - Enhanced PDF Export
+// app/api/products/[productId]/export/route.ts - FIXED VERSION
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -141,6 +141,10 @@ export async function POST(
       content: string,
       backgroundColor?: number[],
     ) => {
+      if (!content || content.trim() === "") {
+        content = "No data available";
+      }
+
       const contentLines = pdf.splitTextToSize(
         content,
         pageWidth - margin * 2 - 10,
@@ -180,14 +184,27 @@ export async function POST(
       title: string,
       useNegativeValues: boolean = false,
     ) => {
+      if (!data || !Array.isArray(data) || data.length === 0) {
+        addStyledHeader(title, 3);
+        addText("No chart data available");
+        return;
+      }
+
       addStyledHeader(title, 3);
 
       const barHeight = 12;
       const barSpacing = 8;
       const maxBarWidth = pageWidth - margin * 2 - 100;
-      const maxValue = Math.max(...data.map((d) => Math.abs(d.value)));
+      const maxValue = Math.max(...data.map((d) => Math.abs(d.value || 0)));
+
+      if (maxValue === 0) {
+        addText("No data to display in chart");
+        return;
+      }
 
       data.forEach((item, index) => {
+        if (!item || typeof item.value !== "number") return;
+
         checkPageBreak(barHeight + barSpacing + 10);
 
         // Label
@@ -196,9 +213,9 @@ export async function POST(
         pdf.setTextColor(...colors.secondary);
 
         const labelText =
-          item.label.length > 25
+          item.label && item.label.length > 25
             ? item.label.substring(0, 25) + "..."
-            : item.label;
+            : item.label || "Unknown";
         pdf.text(labelText, margin, yPosition + barHeight / 2);
 
         // Bar
@@ -230,11 +247,24 @@ export async function POST(
       data: Array<{ label: string; value: number }>,
       title: string,
     ) => {
+      if (!data || !Array.isArray(data) || data.length === 0) {
+        addStyledHeader(title, 3);
+        addText("No chart data available");
+        return;
+      }
+
       addStyledHeader(title, 3);
 
-      const total = data.reduce((sum, item) => sum + item.value, 0);
+      const total = data.reduce((sum, item) => sum + (item?.value || 0), 0);
+
+      if (total === 0) {
+        addText("No data to display in chart");
+        return;
+      }
 
       data.forEach((item, index) => {
+        if (!item || typeof item.value !== "number") return;
+
         checkPageBreak(20);
 
         const percentage = ((item.value / total) * 100).toFixed(1);
@@ -247,7 +277,11 @@ export async function POST(
         // Label and percentage
         pdf.setFontSize(10);
         pdf.setTextColor(...colors.secondary);
-        pdf.text(`${item.label}: ${percentage}%`, margin + 12, yPosition);
+        pdf.text(
+          `${item.label || "Unknown"}: ${percentage}%`,
+          margin + 12,
+          yPosition,
+        );
 
         yPosition += 12;
       });
@@ -262,6 +296,11 @@ export async function POST(
     ) => {
       addStyledHeader(title, 2);
 
+      if (!keywords || !Array.isArray(keywords) || keywords.length === 0) {
+        addText("No keyword data available");
+        return;
+      }
+
       const cloudHeight = 100;
       checkPageBreak(cloudHeight + 20);
 
@@ -271,8 +310,17 @@ export async function POST(
 
       // Sort and limit keywords
       const sortedKeywords = keywords
+        .filter((k) => k && k.word && typeof k.frequency === "number")
         .sort((a, b) => b.frequency - a.frequency)
         .slice(0, 30);
+
+      if (sortedKeywords.length === 0) {
+        pdf.setFontSize(12);
+        pdf.setTextColor(...colors.secondary);
+        pdf.text("No keyword data available", margin + 10, yPosition + 30);
+        yPosition += cloudHeight + 15;
+        return;
+      }
 
       const maxFreq = sortedKeywords[0]?.frequency || 1;
 
@@ -310,6 +358,18 @@ export async function POST(
       });
 
       yPosition += cloudHeight + 15;
+    };
+
+    // Safe data access helper
+    const safeGet = (obj: any, path: string, defaultValue: any = null) => {
+      try {
+        return (
+          path.split(".").reduce((current, key) => current?.[key], obj) ??
+          defaultValue
+        );
+      } catch {
+        return defaultValue;
+      }
     };
 
     // Title Page with brand styling
@@ -383,8 +443,14 @@ export async function POST(
       }
     });
 
-    // Process each analysis
-    product.analyses.forEach((analysis) => {
+    // Debug: Log all available analyses
+    console.log(
+      "🔍 Available analyses in product:",
+      product.analyses.map((a) => ({ type: a.type, status: a.status })),
+    );
+
+    // Process each analysis with better error handling
+    product.analyses.forEach((analysis, analysisIndex) => {
       // Always start new analysis on new page
       pdf.addPage();
       yPosition = margin;
@@ -395,59 +461,91 @@ export async function POST(
           .replace(/_/g, " ")
           .replace(/\b\w/g, (l) => l.toUpperCase());
 
+      console.log(
+        `📊 Processing analysis ${analysisIndex + 1}/${product.analyses.length}: ${analysis.type}`,
+      );
+
       try {
         const data = analysis.data as any;
 
+        if (!data) {
+          console.log(`⚠️ No data found for ${analysis.type}`);
+          addStyledHeader(analysisTitle, 1);
+          addText("No analysis data available");
+          return;
+        }
+
         switch (analysis.type) {
           case "product_description":
+            console.log("Processing product_description...");
             addStyledHeader(analysisTitle, 1);
 
-            if (data.product_description) {
-              addSection(
-                "Product Summary",
-                data.product_description.summary || "No summary available",
-                colors.background,
+            const productDesc = safeGet(data, "product_description");
+            if (productDesc) {
+              const summary = safeGet(
+                productDesc,
+                "summary",
+                "No summary available",
               );
+              addSection("Product Summary", summary, colors.background);
 
-              if (data.product_description.attributes?.length > 0) {
+              const attributes = safeGet(productDesc, "attributes", []);
+              if (Array.isArray(attributes) && attributes.length > 0) {
                 addStyledHeader("Key Attributes", 3);
-                data.product_description.attributes.forEach((attr: string) => {
+                attributes.forEach((attr: string) => {
                   checkPageBreak(15);
                   pdf.setFontSize(11);
                   pdf.setTextColor(...colors.secondary);
-                  pdf.text(`• ${attr}`, margin + 5, yPosition);
+                  pdf.text(
+                    `• ${attr || "Unknown attribute"}`,
+                    margin + 5,
+                    yPosition,
+                  );
                   yPosition += 8;
                 });
               }
 
-              if (data.product_description.variations?.length > 0) {
+              const variations = safeGet(productDesc, "variations", []);
+              if (Array.isArray(variations) && variations.length > 0) {
                 addStyledHeader("Product Variations", 3);
-                data.product_description.variations.forEach(
-                  (variation: string) => {
-                    checkPageBreak(15);
-                    pdf.setFontSize(11);
-                    pdf.setTextColor(...colors.secondary);
-                    pdf.text(`• ${variation}`, margin + 5, yPosition);
-                    yPosition += 8;
-                  },
-                );
+                variations.forEach((variation: string) => {
+                  checkPageBreak(15);
+                  pdf.setFontSize(11);
+                  pdf.setTextColor(...colors.secondary);
+                  pdf.text(
+                    `• ${variation || "Unknown variation"}`,
+                    margin + 5,
+                    yPosition,
+                  );
+                  yPosition += 8;
+                });
               }
+            } else {
+              addText("No product description data available");
             }
             break;
 
           case "sentiment":
+            console.log("Processing sentiment...");
             addStyledHeader(analysisTitle, 1);
 
-            if (data.sentiment_analysis) {
+            const sentimentAnalysis = safeGet(data, "sentiment_analysis");
+            if (sentimentAnalysis) {
               // Customer Likes
-              if (data.sentiment_analysis.customer_likes?.length > 0) {
+              const customerLikes = safeGet(
+                sentimentAnalysis,
+                "customer_likes",
+                [],
+              );
+              if (Array.isArray(customerLikes) && customerLikes.length > 0) {
                 addStyledHeader("What Customers Love", 2, 100);
 
-                const likesData = data.sentiment_analysis.customer_likes
+                const likesData = customerLikes
                   .slice(0, 10)
+                  .filter((item) => item && item.theme && item.percentage)
                   .map((item: any) => ({
                     label: item.theme,
-                    value: parseFloat(item.percentage.replace("%", "")),
+                    value: parseFloat(String(item.percentage).replace("%", "")),
                   }));
 
                 createHorizontalBarChart(
@@ -456,27 +554,36 @@ export async function POST(
                 );
 
                 // Add detailed summaries
-                data.sentiment_analysis.customer_likes
-                  .slice(0, 5)
-                  .forEach((item: any) => {
+                customerLikes.slice(0, 5).forEach((item: any) => {
+                  if (item && item.theme && item.summary) {
                     addSection(
-                      `${item.theme} (${item.percentage})`,
+                      `${item.theme} (${item.percentage || "N/A"})`,
                       item.summary,
                       colors.background,
                     );
-                  });
+                  }
+                });
               }
 
               // Customer Dislikes
-              if (data.sentiment_analysis.customer_dislikes?.length > 0) {
+              const customerDislikes = safeGet(
+                sentimentAnalysis,
+                "customer_dislikes",
+                [],
+              );
+              if (
+                Array.isArray(customerDislikes) &&
+                customerDislikes.length > 0
+              ) {
                 checkPageBreak(80, true); // New page for dislikes
                 addStyledHeader("Areas for Improvement", 2, 100);
 
-                const dislikesData = data.sentiment_analysis.customer_dislikes
+                const dislikesData = customerDislikes
                   .slice(0, 10)
+                  .filter((item) => item && item.theme && item.percentage)
                   .map((item: any) => ({
                     label: item.theme,
-                    value: parseFloat(item.percentage.replace("%", "")),
+                    value: parseFloat(String(item.percentage).replace("%", "")),
                   }));
 
                 createHorizontalBarChart(
@@ -485,85 +592,99 @@ export async function POST(
                 );
 
                 // Add detailed summaries
-                data.sentiment_analysis.customer_dislikes
-                  .slice(0, 5)
-                  .forEach((item: any) => {
+                customerDislikes.slice(0, 5).forEach((item: any) => {
+                  if (item && item.theme && item.summary) {
                     addSection(
-                      `${item.theme} (${item.percentage})`,
+                      `${item.theme} (${item.percentage || "N/A"})`,
                       item.summary,
                       colors.background,
                     );
-                  });
+                  }
+                });
               }
+            } else {
+              addText("No sentiment analysis data available");
             }
             break;
 
           case "voice_of_customer":
+            console.log("Processing voice_of_customer...");
             addStyledHeader(analysisTitle, 1);
 
-            if (data.voice_of_customer?.keywords?.length > 0) {
-              createWordCloud(
-                data.voice_of_customer.keywords,
-                "Word Cloud - Most Frequently Mentioned Terms",
-              );
-
-              // Top keywords table
-              addStyledHeader("Top Keywords by Frequency", 3);
-
-              const topKeywords = data.voice_of_customer.keywords
-                .sort((a: any, b: any) => b.frequency - a.frequency)
-                .slice(0, 20);
-
-              let col = 0;
-              topKeywords.forEach((keyword: any, index: number) => {
-                if (col === 0) checkPageBreak(15);
-
-                const xPos = margin + col * 60;
-                pdf.setFillColor(...chartColors[index % chartColors.length]);
-                pdf.rect(xPos, yPosition - 3, 8, 8, "F");
-
-                pdf.setFontSize(10);
-                pdf.setTextColor(...colors.secondary);
-                pdf.text(
-                  `${keyword.word} (${keyword.frequency})`,
-                  xPos + 10,
-                  yPosition,
+            const voiceOfCustomer = safeGet(data, "voice_of_customer");
+            if (voiceOfCustomer) {
+              const keywords = safeGet(voiceOfCustomer, "keywords", []);
+              if (Array.isArray(keywords) && keywords.length > 0) {
+                createWordCloud(
+                  keywords,
+                  "Word Cloud - Most Frequently Mentioned Terms",
                 );
 
-                col++;
-                if (col === 3) {
-                  col = 0;
-                  yPosition += 12;
-                }
-              });
-              if (col > 0) yPosition += 12;
+                // Top keywords table
+                addStyledHeader("Top Keywords by Frequency", 3);
+
+                const topKeywords = keywords
+                  .filter((k) => k && k.word && typeof k.frequency === "number")
+                  .sort((a: any, b: any) => b.frequency - a.frequency)
+                  .slice(0, 20);
+
+                let col = 0;
+                topKeywords.forEach((keyword: any, index: number) => {
+                  if (col === 0) checkPageBreak(15);
+
+                  const xPos = margin + col * 60;
+                  pdf.setFillColor(...chartColors[index % chartColors.length]);
+                  pdf.rect(xPos, yPosition - 3, 8, 8, "F");
+
+                  pdf.setFontSize(10);
+                  pdf.setTextColor(...colors.secondary);
+                  pdf.text(
+                    `${keyword.word} (${keyword.frequency})`,
+                    xPos + 10,
+                    yPosition,
+                  );
+
+                  col++;
+                  if (col === 3) {
+                    col = 0;
+                    yPosition += 12;
+                  }
+                });
+                if (col > 0) yPosition += 12;
+              } else {
+                addText("No keyword data available");
+              }
+            } else {
+              addText("No voice of customer data available");
             }
             break;
 
           case "four_w_matrix":
+            console.log("Processing four_w_matrix...");
             addStyledHeader(analysisTitle, 1);
 
-            if (data.four_w_matrix) {
+            const fourWMatrix = safeGet(data, "four_w_matrix");
+            if (fourWMatrix) {
               const sections = [
                 {
                   key: "who",
                   title: "WHO - User Profile",
-                  data: data.four_w_matrix.who,
+                  data: safeGet(fourWMatrix, "who"),
                 },
                 {
                   key: "what",
                   title: "WHAT - Product Usage",
-                  data: data.four_w_matrix.what,
+                  data: safeGet(fourWMatrix, "what"),
                 },
                 {
                   key: "where",
                   title: "WHERE - Usage Locations",
-                  data: data.four_w_matrix.where,
+                  data: safeGet(fourWMatrix, "where"),
                 },
                 {
                   key: "when",
                   title: "WHEN - Usage Timing",
-                  data: data.four_w_matrix.when,
+                  data: safeGet(fourWMatrix, "when"),
                 },
               ];
 
@@ -574,30 +695,44 @@ export async function POST(
 
                 addStyledHeader(section.title, 2);
 
-                if (section.data?.topics?.length > 0) {
-                  const pieData = section.data.topics.map((item: any) => ({
-                    label: item.topic,
-                    value: parseFloat(item.percentage.replace("%", "")),
-                  }));
+                if (
+                  section.data &&
+                  Array.isArray(section.data) &&
+                  section.data.length > 0
+                ) {
+                  const pieData = section.data
+                    .filter((item) => item && item.topic && item.percentage)
+                    .map((item: any) => ({
+                      label: item.topic,
+                      value: parseFloat(
+                        String(item.percentage).replace("%", ""),
+                      ),
+                    }));
 
                   createPieChartTable(pieData, "Distribution");
 
-                  if (section.data.summary) {
+                  if (section.data[0]?.summary) {
                     addSection(
                       "Summary",
-                      section.data.summary,
+                      section.data[0].summary,
                       colors.background,
                     );
                   }
+                } else {
+                  addText(`No ${section.key} data available`);
                 }
               });
+            } else {
+              addText("No 4W matrix data available");
             }
             break;
 
           case "jtbd":
+            console.log("Processing jtbd...");
             addStyledHeader(analysisTitle, 1);
 
-            if (data.jtbd_analysis) {
+            const jtbdAnalysis = safeGet(data, "jtbd_analysis");
+            if (jtbdAnalysis) {
               const jobTypes = [
                 {
                   key: "functional_jobs",
@@ -621,119 +756,141 @@ export async function POST(
 
                 addStyledHeader(jobType.title, 2);
 
-                const jobs = data.jtbd_analysis[jobType.key];
-                if (jobs?.length > 0) {
-                  const pieData = jobs.map((job: any) => ({
-                    label:
-                      job.job_statement.substring(0, 50) +
-                      (job.job_statement.length > 50 ? "..." : ""),
-                    value: parseFloat(job.percentage.replace("%", "")),
-                  }));
+                const jobs = safeGet(jtbdAnalysis, jobType.key, []);
+                if (Array.isArray(jobs) && jobs.length > 0) {
+                  const pieData = jobs
+                    .filter((job) => job && job.job_statement && job.percentage)
+                    .map((job: any) => ({
+                      label:
+                        (job.job_statement || "").substring(0, 50) +
+                        ((job.job_statement || "").length > 50 ? "..." : ""),
+                      value: parseFloat(
+                        String(job.percentage).replace("%", ""),
+                      ),
+                    }));
 
                   createPieChartTable(pieData, "Job Distribution");
 
                   // Add full job statements
                   addStyledHeader("Detailed Job Statements", 3);
                   jobs.forEach((job: any) => {
-                    addSection(
-                      `${job.percentage}`,
-                      job.job_statement,
-                      colors.background,
-                    );
+                    if (job && job.job_statement) {
+                      addSection(
+                        `${job.percentage || "N/A"}`,
+                        job.job_statement,
+                        colors.background,
+                      );
+                    }
                   });
+                } else {
+                  addText(`No ${jobType.title.toLowerCase()} data available`);
                 }
               });
+            } else {
+              addText("No Jobs to be Done data available");
             }
             break;
 
           case "stp":
+            console.log("Processing stp...");
             addStyledHeader(analysisTitle, 1);
 
-            if (data.stp_analysis) {
+            const stpAnalysis = safeGet(data, "stp_analysis");
+            if (stpAnalysis) {
               // Segmentation
-              if (data.stp_analysis.segmentation?.segments?.length > 0) {
+              const segmentation = safeGet(stpAnalysis, "segmentation", []);
+              if (Array.isArray(segmentation) && segmentation.length > 0) {
                 addStyledHeader("Market Segmentation", 2);
 
-                const segmentData = data.stp_analysis.segmentation.segments.map(
-                  (seg: any) => ({
+                const segmentData = segmentation
+                  .filter((seg) => seg && seg.segment && seg.percentage)
+                  .map((seg: any) => ({
                     label: seg.segment,
-                    value: parseFloat(seg.percentage.replace("%", "")),
-                  }),
-                );
+                    value: parseFloat(String(seg.percentage).replace("%", "")),
+                  }));
 
                 createPieChartTable(segmentData, "Segment Distribution");
 
-                data.stp_analysis.segmentation.segments.forEach((seg: any) => {
-                  addSection(
-                    `${seg.segment} (${seg.percentage})`,
-                    seg.description,
-                    colors.background,
-                  );
+                segmentation.forEach((seg: any) => {
+                  if (seg && seg.segment && seg.description) {
+                    addSection(
+                      `${seg.segment} (${seg.percentage || "N/A"})`,
+                      seg.description,
+                      colors.background,
+                    );
+                  }
                 });
               }
 
               // Targeting
-              if (data.stp_analysis.targeting) {
+              const targeting = safeGet(stpAnalysis, "targeting_strategy");
+              if (targeting) {
                 checkPageBreak(80, true);
                 addStyledHeader("Target Market", 2);
 
-                if (data.stp_analysis.targeting.primary_target) {
+                const selectedSegments = safeGet(
+                  targeting,
+                  "selected_segments",
+                );
+                if (selectedSegments) {
                   addSection(
-                    "Primary Target",
-                    data.stp_analysis.targeting.primary_target,
+                    "Selected Segments",
+                    selectedSegments,
                     colors.background,
                   );
                 }
 
-                if (data.stp_analysis.targeting.secondary_targets?.length > 0) {
-                  addStyledHeader("Secondary Targets", 3);
-                  data.stp_analysis.targeting.secondary_targets.forEach(
-                    (target: string) => {
-                      checkPageBreak(15);
-                      pdf.setFontSize(11);
-                      pdf.setTextColor(...colors.secondary);
-                      pdf.text(`• ${target}`, margin + 5, yPosition);
-                      yPosition += 8;
-                    },
+                const approachDescription = safeGet(
+                  targeting,
+                  "approach_description",
+                );
+                if (approachDescription) {
+                  addSection(
+                    "Approach Description",
+                    approachDescription,
+                    colors.background,
                   );
                 }
               }
 
               // Positioning
-              if (data.stp_analysis.positioning) {
+              const positioning = safeGet(stpAnalysis, "positioning_strategy");
+              if (positioning) {
                 checkPageBreak(80, true);
                 addStyledHeader("Market Positioning", 2);
 
-                if (data.stp_analysis.positioning.statement) {
+                const positioningStatement = safeGet(
+                  positioning,
+                  "positioning_statement",
+                );
+                if (positioningStatement) {
                   addSection(
                     "Positioning Statement",
-                    data.stp_analysis.positioning.statement,
+                    positioningStatement,
                     colors.background,
                   );
                 }
 
-                if (
-                  data.stp_analysis.positioning.key_differentiators?.length > 0
-                ) {
-                  addStyledHeader("Key Differentiators", 3);
-                  data.stp_analysis.positioning.key_differentiators.forEach(
-                    (diff: string) => {
-                      checkPageBreak(15);
-                      pdf.setFontSize(11);
-                      pdf.setTextColor(...colors.secondary);
-                      pdf.text(`• ${diff}`, margin + 5, yPosition);
-                      yPosition += 8;
-                    },
+                const uvp = safeGet(positioning, "unique_value_proposition");
+                if (uvp) {
+                  addSection(
+                    "Unique Value Proposition",
+                    uvp,
+                    colors.background,
                   );
                 }
               }
+            } else {
+              addText("No STP analysis data available");
             }
             break;
 
           case "swot":
+            console.log("Processing swot...");
             addStyledHeader(analysisTitle, 1);
 
-            if (data.swot_analysis) {
+            const swotAnalysis = safeGet(data, "swot_analysis");
+            if (swotAnalysis) {
               const swotSections = [
                 { key: "strengths", title: "Strengths", color: colors.chart1 },
                 {
@@ -755,42 +912,52 @@ export async function POST(
                   checkPageBreak(80, true);
                 }
 
-                const items = data.swot_analysis[section.key];
-                if (items?.length > 0) {
+                const items = safeGet(swotAnalysis, section.key, []);
+                if (Array.isArray(items) && items.length > 0) {
                   addStyledHeader(section.title, 2);
 
-                  const pieData = items.map((item: any) => ({
-                    label: item.topic,
-                    value: parseFloat(item.percentage.replace("%", "")),
-                  }));
+                  const pieData = items
+                    .filter((item) => item && item.topic && item.percentage)
+                    .map((item: any) => ({
+                      label: item.topic,
+                      value: parseFloat(
+                        String(item.percentage).replace("%", ""),
+                      ),
+                    }));
 
                   createPieChartTable(pieData, `${section.title} Distribution`);
 
                   items.forEach((item: any) => {
-                    addSection(
-                      `${item.topic} (${item.percentage})`,
-                      item.description,
-                      colors.background,
-                    );
+                    if (item && item.topic && item.summary) {
+                      addSection(
+                        `${item.topic} (${item.percentage || "N/A"})`,
+                        item.summary,
+                        colors.background,
+                      );
+                    }
                   });
 
                   sectionCount++;
                 }
               });
+            } else {
+              addText("No SWOT analysis data available");
             }
             break;
 
           case "customer_journey":
+            console.log("Processing customer_journey...");
             addStyledHeader(analysisTitle, 1);
 
-            if (data.customer_journey?.stages) {
+            const customerJourney = safeGet(data, "customer_journey");
+            if (customerJourney) {
               const stages = [
                 "awareness",
                 "consideration",
                 "purchase",
-                "onboarding",
+                "delivery_unboxing",
                 "usage",
-                "advocacy",
+                "post_purchase",
               ];
 
               stages.forEach((stageName, idx) => {
@@ -798,270 +965,262 @@ export async function POST(
                   checkPageBreak(80, true);
                 }
 
-                const stage = data.customer_journey.stages[stageName];
-                if (stage) {
+                const stage = safeGet(customerJourney, stageName);
+                if (stage && Array.isArray(stage) && stage.length > 0) {
                   addStyledHeader(
-                    stageName.charAt(0).toUpperCase() + stageName.slice(1),
+                    stageName.charAt(0).toUpperCase() +
+                      stageName.slice(1).replace("_", " "),
                     2,
                   );
 
-                  if (stage.description) {
-                    addSection(
-                      "Stage Description",
-                      stage.description,
-                      colors.background,
-                    );
-                  }
-
-                  if (stage.touchpoints?.length > 0) {
-                    addStyledHeader("Touchpoints", 3);
-                    stage.touchpoints.forEach((touchpoint: string) => {
-                      checkPageBreak(15);
-                      pdf.setFontSize(11);
-                      pdf.setTextColor(...colors.secondary);
-                      pdf.text(`• ${touchpoint}`, margin + 5, yPosition);
-                      yPosition += 8;
-                    });
-                  }
-
-                  if (stage.pain_points?.length > 0) {
-                    addStyledHeader("Pain Points", 3);
-                    stage.pain_points.forEach((pain: string) => {
-                      checkPageBreak(15);
-                      pdf.setFontSize(11);
-                      pdf.setTextColor(...colors.secondary);
-                      pdf.text(`• ${pain}`, margin + 5, yPosition);
-                      yPosition += 8;
-                    });
-                  }
-
-                  if (stage.opportunities?.length > 0) {
-                    addStyledHeader("Opportunities", 3);
-                    stage.opportunities.forEach((opp: string) => {
-                      checkPageBreak(15);
-                      pdf.setFontSize(11);
-                      pdf.setTextColor(...colors.secondary);
-                      pdf.text(`• ${opp}`, margin + 5, yPosition);
-                      yPosition += 8;
-                    });
-                  }
+                  stage.forEach((stageItem: any) => {
+                    if (stageItem && stageItem.topic) {
+                      addSection(
+                        `${stageItem.topic} (${stageItem.percentage || "N/A"})`,
+                        stageItem.summary || "No summary available",
+                        colors.background,
+                      );
+                    }
+                  });
                 }
               });
+            } else {
+              addText("No customer journey data available");
             }
             break;
 
           case "personas":
+            console.log("Processing personas...");
             addStyledHeader(analysisTitle, 1);
 
-            if (data.customer_personas?.personas?.length > 0) {
-              data.customer_personas.personas.forEach(
-                (persona: any, idx: number) => {
-                  if (idx > 0) checkPageBreak(80, true);
+            const customerPersonas = safeGet(data, "customer_personas", []);
+            if (
+              Array.isArray(customerPersonas) &&
+              customerPersonas.length > 0
+            ) {
+              customerPersonas.forEach((persona: any, idx: number) => {
+                if (idx > 0) checkPageBreak(80, true);
 
-                  addStyledHeader(persona.name || `Persona ${idx + 1}`, 2);
+                const personaName =
+                  safeGet(persona, "persona_name") ||
+                  safeGet(persona, "name") ||
+                  `Persona ${idx + 1}`;
+                addStyledHeader(personaName, 2);
 
-                  const details = [
-                    { label: "Age", value: persona.age },
-                    { label: "Occupation", value: persona.occupation },
-                    { label: "Location", value: persona.location },
-                    { label: "Income", value: persona.income },
-                    { label: "Family Status", value: persona.family_status },
-                  ];
+                const demographics = safeGet(persona, "demographics", {});
+                const details = [
+                  { label: "Age", value: safeGet(demographics, "age") },
+                  {
+                    label: "Job Title",
+                    value: safeGet(demographics, "job_title"),
+                  },
+                  {
+                    label: "Income Range",
+                    value: safeGet(demographics, "income_range"),
+                  },
+                  {
+                    label: "Education",
+                    value: safeGet(demographics, "education_level"),
+                  },
+                  {
+                    label: "Living Environment",
+                    value: safeGet(demographics, "living_environment"),
+                  },
+                ];
 
-                  details.forEach((detail) => {
-                    if (detail.value) {
-                      pdf.setFontSize(11);
-                      pdf.setFont("helvetica", "bold");
-                      pdf.setTextColor(...colors.secondary);
-                      pdf.text(`${detail.label}: `, margin, yPosition);
-                      pdf.setFont("helvetica", "normal");
-                      pdf.text(detail.value, margin + 30, yPosition);
-                      yPosition += 8;
-                    }
+                details.forEach((detail) => {
+                  if (detail.value) {
+                    pdf.setFontSize(11);
+                    pdf.setFont("helvetica", "bold");
+                    pdf.setTextColor(...colors.secondary);
+                    pdf.text(`${detail.label}: `, margin, yPosition);
+                    pdf.setFont("helvetica", "normal");
+                    pdf.text(detail.value, margin + 40, yPosition);
+                    yPosition += 8;
+                  }
+                });
+
+                const intro = safeGet(persona, "persona_intro");
+                if (intro) {
+                  addSection("Introduction", intro, colors.background);
+                }
+
+                const goals = safeGet(persona, "goals_motivations", []);
+                if (Array.isArray(goals) && goals.length > 0) {
+                  addStyledHeader("Goals & Motivations", 3);
+                  goals.forEach((goal: string) => {
+                    checkPageBreak(15);
+                    pdf.setFontSize(11);
+                    pdf.setTextColor(...colors.secondary);
+                    pdf.text(`• ${goal}`, margin + 5, yPosition);
+                    yPosition += 8;
                   });
+                }
 
-                  if (persona.personality_traits?.length > 0) {
-                    addStyledHeader("Personality Traits", 3);
-                    persona.personality_traits.forEach((trait: string) => {
-                      checkPageBreak(15);
-                      pdf.setFontSize(11);
-                      pdf.setTextColor(...colors.secondary);
-                      pdf.text(`• ${trait}`, margin + 5, yPosition);
-                      yPosition += 8;
-                    });
-                  }
-
-                  if (persona.goals?.length > 0) {
-                    addStyledHeader("Goals", 3);
-                    persona.goals.forEach((goal: string) => {
-                      checkPageBreak(15);
-                      pdf.setFontSize(11);
-                      pdf.setTextColor(...colors.secondary);
-                      pdf.text(`• ${goal}`, margin + 5, yPosition);
-                      yPosition += 8;
-                    });
-                  }
-
-                  if (persona.pain_points?.length > 0) {
-                    addStyledHeader("Pain Points", 3);
-                    persona.pain_points.forEach((pain: string) => {
-                      checkPageBreak(15);
-                      pdf.setFontSize(11);
-                      pdf.setTextColor(...colors.secondary);
-                      pdf.text(`• ${pain}`, margin + 5, yPosition);
-                      yPosition += 8;
-                    });
-                  }
-
-                  if (persona.quote) {
-                    addSection(
-                      "Quote",
-                      `"${persona.quote}"`,
-                      colors.background,
-                    );
-                  }
-                },
-              );
+                const painPoints = safeGet(
+                  persona,
+                  "pain_points_frustrations",
+                  [],
+                );
+                if (Array.isArray(painPoints) && painPoints.length > 0) {
+                  addStyledHeader("Pain Points & Frustrations", 3);
+                  painPoints.forEach((pain: string) => {
+                    checkPageBreak(15);
+                    pdf.setFontSize(11);
+                    pdf.setTextColor(...colors.secondary);
+                    pdf.text(`• ${pain}`, margin + 5, yPosition);
+                    yPosition += 8;
+                  });
+                }
+              });
+            } else {
+              addText("No customer persona data available");
             }
             break;
 
           case "competition":
+            console.log("Processing competition...");
             addStyledHeader(analysisTitle, 1);
 
-            if (data.competition_analysis) {
-              if (data.competition_analysis.executive_summary) {
-                addSection(
-                  "Executive Summary",
-                  data.competition_analysis.executive_summary,
-                  colors.background,
-                );
+            const competitionAnalysis = safeGet(data, "competition_analysis");
+            if (competitionAnalysis) {
+              const usps = safeGet(competitionAnalysis, "usps");
+              if (usps) {
+                addStyledHeader("Unique Selling Propositions", 2);
+
+                const userBrand = safeGet(usps, "user_brand");
+                if (userBrand) {
+                  addSection("Your Brand", userBrand, colors.background);
+                }
+
+                // Add competitor USPs
+                Object.keys(usps).forEach((key, index) => {
+                  if (key.startsWith("competitor_") && usps[key]) {
+                    addSection(
+                      `Competitor ${index}`,
+                      usps[key],
+                      colors.background,
+                    );
+                  }
+                });
               }
 
-              if (data.competition_analysis.feature_comparison?.length > 0) {
+              const comparisonMatrix = safeGet(
+                competitionAnalysis,
+                "comparison_matrix",
+                [],
+              );
+              if (
+                Array.isArray(comparisonMatrix) &&
+                comparisonMatrix.length > 0
+              ) {
                 checkPageBreak(80, true);
                 addStyledHeader("Feature Comparison", 2);
 
-                data.competition_analysis.feature_comparison.forEach(
-                  (feature: any) => {
+                comparisonMatrix.forEach((feature: any) => {
+                  if (feature && feature.feature) {
                     checkPageBreak(40);
 
                     pdf.setFontSize(12);
                     pdf.setFont("helvetica", "bold");
                     pdf.setTextColor(...colors.primary);
-                    pdf.text(feature.feature_name, margin, yPosition);
+                    pdf.text(feature.feature, margin, yPosition);
                     yPosition += 8;
 
-                    // Your product
-                    pdf.setFontSize(10);
-                    pdf.setFont("helvetica", "normal");
-                    pdf.setTextColor(...colors.secondary);
-                    pdf.text("Your Product:", margin, yPosition);
+                    // Show comparison results
+                    Object.keys(feature).forEach((key) => {
+                      if (key !== "feature" && feature[key]) {
+                        pdf.setFontSize(10);
+                        pdf.setFont("helvetica", "normal");
+                        pdf.setTextColor(...colors.secondary);
+                        pdf.text(
+                          `${key}: ${feature[key]}`,
+                          margin + 5,
+                          yPosition,
+                        );
+                        yPosition += 6;
+                      }
+                    });
                     yPosition += 5;
-
-                    const yourLines = pdf.splitTextToSize(
-                      feature.your_product || "N/A",
-                      pageWidth - margin * 2 - 20,
-                    );
-                    pdf.text(yourLines, margin + 5, yPosition);
-                    yPosition += yourLines.length * 4 + 3;
-
-                    // Competitors
-                    pdf.text("Competitors:", margin, yPosition);
-                    yPosition += 5;
-
-                    const compLines = pdf.splitTextToSize(
-                      feature.competitors || "N/A",
-                      pageWidth - margin * 2 - 20,
-                    );
-                    pdf.text(compLines, margin + 5, yPosition);
-                    yPosition += compLines.length * 4 + 8;
-                  },
-                );
+                  }
+                });
               }
-
-              if (
-                data.competition_analysis.competitive_advantages?.length > 0
-              ) {
-                addStyledHeader("Competitive Advantages", 2);
-                data.competition_analysis.competitive_advantages.forEach(
-                  (adv: string) => {
-                    checkPageBreak(15);
-                    pdf.setFontSize(11);
-                    pdf.setTextColor(...colors.secondary);
-                    pdf.text(`• ${adv}`, margin + 5, yPosition);
-                    yPosition += 8;
-                  },
-                );
-              }
+            } else {
+              addText("No competition analysis data available");
             }
             break;
 
           case "strategic_recommendations":
+            console.log("Processing strategic_recommendations...");
             addStyledHeader(analysisTitle, 1);
 
-            if (data.strategic_recommendations?.recommendations?.length > 0) {
-              data.strategic_recommendations.recommendations.forEach(
-                (rec: any, idx: number) => {
-                  if (idx > 0) checkPageBreak(60);
+            const strategicRec = safeGet(data, "strategic_recommendations");
+            if (strategicRec) {
+              const execSummary = safeGet(strategicRec, "executive_summary");
+              if (execSummary) {
+                addSection("Executive Summary", execSummary, colors.background);
+              }
 
-                  addStyledHeader(`${idx + 1}. ${rec.title}`, 2);
+              // Process different strategy types
+              const strategyTypes = [
+                "product_strategy",
+                "marketing_strategy",
+                "customer_experience",
+                "competitive_strategy",
+              ];
 
-                  if (rec.description) {
-                    addSection(
-                      "Description",
-                      rec.description,
-                      colors.background,
-                    );
-                  }
+              strategyTypes.forEach((strategyType) => {
+                const strategies = safeGet(strategicRec, strategyType, []);
+                if (Array.isArray(strategies) && strategies.length > 0) {
+                  checkPageBreak(60, true);
+                  addStyledHeader(
+                    strategyType
+                      .replace("_", " ")
+                      .replace(/\b\w/g, (l) => l.toUpperCase()),
+                    2,
+                  );
 
-                  if (rec.implementation_steps?.length > 0) {
-                    addStyledHeader("Implementation Steps", 3);
-                    rec.implementation_steps.forEach(
-                      (step: string, stepIdx: number) => {
-                        checkPageBreak(15);
-                        pdf.setFontSize(11);
-                        pdf.setTextColor(...colors.secondary);
-                        pdf.text(
-                          `${stepIdx + 1}. ${step}`,
-                          margin + 5,
-                          yPosition,
+                  strategies.forEach((rec: any, idx: number) => {
+                    if (rec && rec.recommendation) {
+                      checkPageBreak(40);
+
+                      addStyledHeader(
+                        `${idx + 1}. ${rec.timeframe || "Strategy"} - ${rec.priority_level || "Priority"}`,
+                        3,
+                      );
+
+                      addSection(
+                        "Recommendation",
+                        rec.recommendation,
+                        colors.background,
+                      );
+
+                      if (rec.expected_impact) {
+                        addSection(
+                          "Expected Impact",
+                          rec.expected_impact,
+                          colors.background,
                         );
-                        yPosition += 8;
-                      },
-                    );
-                  }
+                      }
 
-                  if (rec.expected_impact) {
-                    addSection(
-                      "Expected Impact",
-                      rec.expected_impact,
-                      colors.background,
-                    );
-                  }
-
-                  if (rec.priority) {
-                    pdf.setFontSize(11);
-                    pdf.setFont("helvetica", "bold");
-                    pdf.setTextColor(...colors.secondary);
-                    pdf.text("Priority: ", margin, yPosition);
-                    pdf.setFont("helvetica", "normal");
-
-                    const priorityColor =
-                      rec.priority === "High"
-                        ? colors.chart1
-                        : rec.priority === "Medium"
-                          ? colors.chart2
-                          : colors.chart3;
-                    pdf.setTextColor(...priorityColor);
-                    pdf.text(rec.priority, margin + 25, yPosition);
-                    yPosition += 10;
-                  }
-                },
-              );
+                      if (rec.implementation_considerations) {
+                        addSection(
+                          "Implementation",
+                          rec.implementation_considerations,
+                          colors.background,
+                        );
+                      }
+                    }
+                  });
+                }
+              });
+            } else {
+              addText("No strategic recommendations data available");
             }
             break;
 
           default:
+            console.log(`⚠️ Unknown analysis type: ${analysis.type}`);
             addStyledHeader(analysisTitle, 1);
             addText(
               "Analysis data available - see platform for detailed visualization",
@@ -1070,7 +1229,8 @@ export async function POST(
             break;
         }
       } catch (error) {
-        console.error(`Error processing ${analysis.type}:`, error);
+        console.error(`❌ Error processing ${analysis.type}:`, error);
+        addStyledHeader(analysisTitle, 1);
         addSection(
           "Error",
           "Unable to process this analysis data. Please view on the platform for complete details.",
@@ -1099,6 +1259,8 @@ export async function POST(
       );
     }
 
+    console.log(`✅ PDF generation completed. Total pages: ${totalPages}`);
+
     // Generate PDF buffer
     const pdfBuffer = Buffer.from(pdf.output("arraybuffer"));
 
@@ -1111,7 +1273,7 @@ export async function POST(
       },
     });
   } catch (error) {
-    console.error("Error generating PDF:", error);
+    console.error("❌ Error generating PDF:", error);
     return NextResponse.json(
       { error: "Failed to generate PDF" },
       { status: 500 },
