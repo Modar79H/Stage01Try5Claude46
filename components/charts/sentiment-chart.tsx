@@ -61,8 +61,8 @@ export function SentimentChart({ likes, dislikes }: SentimentChartProps) {
         data: topThemes.map((item) =>
           item.type === "positive" ? item.percentage : 0,
         ),
-        backgroundColor: "rgba(85, 70, 225, 0.8)",
-        borderColor: "rgba(85, 70, 225, 1)",
+        backgroundColor: "rgba(16, 72, 98, 0.8)",
+        borderColor: "rgba(16, 72, 98, 1)",
         borderWidth: 1,
       },
       {
@@ -70,8 +70,8 @@ export function SentimentChart({ likes, dislikes }: SentimentChartProps) {
         data: topThemes.map((item) =>
           item.type === "negative" ? -item.percentage : 0,
         ),
-        backgroundColor: "rgba(107, 89, 230, 0.8)",
-        borderColor: "rgba(107, 89, 230, 1)",
+        backgroundColor: "rgba(233, 113, 50, 0.8)",
+        borderColor: "rgba(233, 113, 50, 1)",
         borderWidth: 1,
       },
     ],

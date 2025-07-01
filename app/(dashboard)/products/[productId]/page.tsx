@@ -13,13 +13,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CollapsibleAnalysis } from "@/components/collapsible-analysis";
 import { Progress } from "@/components/ui/progress";
 import { AnalysisStatus } from "@/components/analysis-status";
 import { ProductDescription } from "@/components/analysis/product-description";
-import { SentimentAnalysis } from "@/components/analysis/sentiment-analysis";
-import { VoiceOfCustomer } from "@/components/analysis/voice-of-customer";
-import { FourWMatrix } from "@/components/analysis/four-w-matrix";
+import { VOCCombined } from "@/components/analysis/voc-combined";
 import { JTBDAnalysis } from "@/components/analysis/jtbd-analysis";
 import { STPAnalysis } from "@/components/analysis/stp-analysis";
 import { SWOTAnalysis } from "@/components/analysis/swot-analysis";
@@ -204,106 +202,65 @@ export default async function ProductAnalysisPage({
           </Card>
         )}
 
-        {/* Analysis Tabs - Only show if we have data */}
+        {/* Analysis Sections - Only show if we have data */}
         {hasAnalysisData && (
-          <Card>
-            <CardContent className="p-0">
-              <Tabs defaultValue="product_description" className="w-full">
-                <TabsList className="w-full h-auto flex-wrap justify-start gap-1 p-1 bg-gray-50">
-                  <TabsTrigger value="product_description" className="text-xs">
-                    Product Description
-                  </TabsTrigger>
-                  <TabsTrigger value="sentiment" className="text-xs">
-                    Sentiment
-                  </TabsTrigger>
-                  <TabsTrigger value="voice_of_customer" className="text-xs">
-                    Voice of Customer
-                  </TabsTrigger>
-                  <TabsTrigger value="four_w_matrix" className="text-xs">
-                    4W Matrix
-                  </TabsTrigger>
-                  <TabsTrigger value="jtbd" className="text-xs">
-                    Jobs to be Done
-                  </TabsTrigger>
-                  <TabsTrigger value="stp" className="text-xs">
-                    STP Analysis
-                  </TabsTrigger>
-                  <TabsTrigger value="swot" className="text-xs">
-                    SWOT
-                  </TabsTrigger>
-                  <TabsTrigger value="customer_journey" className="text-xs">
-                    Customer Journey
-                  </TabsTrigger>
-                  <TabsTrigger value="personas" className="text-xs">
-                    Personas
-                  </TabsTrigger>
-                  {hasCompetitors && (
-                    <TabsTrigger value="competition" className="text-xs">
-                      Competition
-                    </TabsTrigger>
-                  )}
-                  <TabsTrigger
-                    value="strategic_recommendations"
-                    className="text-xs"
-                  >
-                    Recommendations
-                  </TabsTrigger>
-                </TabsList>
+          <div className="space-y-4">
+            <CollapsibleAnalysis title="Product Description" defaultOpen={true}>
+              <ProductDescription analysis={analyses.product_description} />
+            </CollapsibleAnalysis>
 
-                <div className="p-6">
-                  <TabsContent value="product_description">
-                    <ProductDescription
-                      analysis={analyses.product_description}
-                    />
-                  </TabsContent>
+            <CollapsibleAnalysis
+              title="VOC (Voice of Customer)"
+              defaultOpen={false}
+            >
+              <VOCCombined
+                analyses={{
+                  voice_of_customer: analyses.voice_of_customer,
+                  rating_analysis: analyses.rating_analysis,
+                  sentiment: analyses.sentiment,
+                  four_w_matrix: analyses.four_w_matrix,
+                }}
+              />
+            </CollapsibleAnalysis>
 
-                  <TabsContent value="sentiment">
-                    <SentimentAnalysis analysis={analyses.sentiment} />
-                  </TabsContent>
+            <CollapsibleAnalysis title="Jobs to be Done" defaultOpen={false}>
+              <JTBDAnalysis analysis={analyses.jtbd} />
+            </CollapsibleAnalysis>
 
-                  <TabsContent value="voice_of_customer">
-                    <VoiceOfCustomer analysis={analyses.voice_of_customer} />
-                  </TabsContent>
+            <CollapsibleAnalysis title="STP Analysis" defaultOpen={false}>
+              <STPAnalysis analysis={analyses.stp} />
+            </CollapsibleAnalysis>
 
-                  <TabsContent value="four_w_matrix">
-                    <FourWMatrix analysis={analyses.four_w_matrix} />
-                  </TabsContent>
+            <CollapsibleAnalysis title="SWOT Analysis" defaultOpen={false}>
+              <SWOTAnalysis analysis={analyses.swot} />
+            </CollapsibleAnalysis>
 
-                  <TabsContent value="jtbd">
-                    <JTBDAnalysis analysis={analyses.jtbd} />
-                  </TabsContent>
+            <CollapsibleAnalysis title="Customer Journey" defaultOpen={false}>
+              <CustomerJourney analysis={analyses.customer_journey} />
+            </CollapsibleAnalysis>
 
-                  <TabsContent value="stp">
-                    <STPAnalysis analysis={analyses.stp} />
-                  </TabsContent>
+            <CollapsibleAnalysis title="Customer Personas" defaultOpen={false}>
+              <CustomerPersonas analysis={analyses.personas} />
+            </CollapsibleAnalysis>
 
-                  <TabsContent value="swot">
-                    <SWOTAnalysis analysis={analyses.swot} />
-                  </TabsContent>
+            {hasCompetitors && (
+              <CollapsibleAnalysis
+                title="Competition Analysis"
+                defaultOpen={false}
+              >
+                <CompetitionAnalysis analysis={analyses.competition} />
+              </CollapsibleAnalysis>
+            )}
 
-                  <TabsContent value="customer_journey">
-                    <CustomerJourney analysis={analyses.customer_journey} />
-                  </TabsContent>
-
-                  <TabsContent value="personas">
-                    <CustomerPersonas analysis={analyses.personas} />
-                  </TabsContent>
-
-                  {hasCompetitors && (
-                    <TabsContent value="competition">
-                      <CompetitionAnalysis analysis={analyses.competition} />
-                    </TabsContent>
-                  )}
-
-                  <TabsContent value="strategic_recommendations">
-                    <StrategicRecommendations
-                      analysis={analyses.strategic_recommendations}
-                    />
-                  </TabsContent>
-                </div>
-              </Tabs>
-            </CardContent>
-          </Card>
+            <CollapsibleAnalysis
+              title="Strategic Recommendations"
+              defaultOpen={false}
+            >
+              <StrategicRecommendations
+                analysis={analyses.strategic_recommendations}
+              />
+            </CollapsibleAnalysis>
+          </div>
         )}
       </div>
     </ProductPageWrapper>

@@ -56,18 +56,18 @@ export function VoiceOfCustomer({ analysis }: VoiceOfCustomerProps) {
     ctx.fillRect(0, 0, rect.width, 400);
 
     // Colors using the new brand palette with variations
-    const baseColor = "#5546e1";
+    const baseColor = "#104862";
     const colors = [
-      "#5546e1", // Main brand color
-      "#6b59e6", // Lighter variant
-      "#4a3ddb", // Darker variant
-      "#7c6fea", // Even lighter
-      "#3d2fd5", // Even darker
-      "#8f84ed", // Very light
-      "#2e1ecf", // Very dark
-      "#a199f0", // Extremely light
-      "#1e0cc9", // Extremely dark
-      "#b3aef3", // Pastel variant
+      "#104862", // Main brand color (blue-green)
+      "#E97132", // Secondary brand color (orange)
+      "#1A5A7A", // Darker blue variant
+      "#F08040", // Lighter orange variant
+      "#0C3448", // Even darker blue
+      "#EC5820", // Darker orange
+      "#2B6E90", // Light blue variant
+      "#F4955A", // Light orange variant
+      "#083042", // Very dark blue
+      "#E84510", // Very dark orange
     ];
 
     // Sort keywords by frequency and take top 40
@@ -240,55 +240,25 @@ export function VoiceOfCustomer({ analysis }: VoiceOfCustomerProps) {
     .slice(0, 20);
 
   return (
-    <div className="space-y-6">
-      {/* Word Cloud */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <MessageSquare className="h-5 w-5 mr-2" />
-            Voice of Customer - Word Cloud
-          </CardTitle>
-          <CardDescription>
-            Visual representation of most frequently mentioned terms
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="bg-[#f9f9f9] border rounded-lg p-4">
-            <canvas
-              ref={canvasRef}
-              className="w-full"
-              style={{ height: "300px" }}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Top Keywords Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Top Keywords by Frequency</CardTitle>
-          <CardDescription>
-            Most mentioned words and phrases in customer reviews
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {topKeywords.map((keyword, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-              >
-                <span className="font-medium">{keyword.word}</span>
-                <div className="flex items-center space-x-2">
-                  <div className="bg-[#5546e1] text-white text-xs px-2 py-1 rounded-full">
-                    {keyword.frequency}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center">
+          <MessageSquare className="h-5 w-5 mr-2" />
+          Voice of Customer - Word Cloud
+        </CardTitle>
+        <CardDescription>
+          Visual representation of most frequently mentioned terms
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="bg-[#f9f9f9] border rounded-lg p-4">
+          <canvas
+            ref={canvasRef}
+            className="w-full"
+            style={{ height: "300px" }}
+          />
+        </div>
+      </CardContent>
+    </Card>
   );
 }

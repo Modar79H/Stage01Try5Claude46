@@ -13,7 +13,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProfileSettings } from "@/components/settings/profile-settings";
 import { PasswordSettings } from "@/components/settings/password-settings";
-import { User, Shield, Settings } from "lucide-react";
+import { PreferencesSettings } from "@/components/settings/preferences-settings";
+import { User, Shield, Settings, Palette } from "lucide-react";
 
 async function getUserData(userId: string) {
   const user = await prisma.user.findUnique({
@@ -56,7 +57,7 @@ export default async function SettingsPage() {
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 lg:w-[400px]">
+        <TabsList className="grid w-full grid-cols-3 lg:w-[600px]">
           <TabsTrigger value="profile" className="flex items-center">
             <User className="h-4 w-4 mr-2" />
             Profile
@@ -64,6 +65,10 @@ export default async function SettingsPage() {
           <TabsTrigger value="security" className="flex items-center">
             <Shield className="h-4 w-4 mr-2" />
             Security
+          </TabsTrigger>
+          <TabsTrigger value="preferences" className="flex items-center">
+            <Palette className="h-4 w-4 mr-2" />
+            Preferences
           </TabsTrigger>
         </TabsList>
 
@@ -92,6 +97,20 @@ export default async function SettingsPage() {
             </CardHeader>
             <CardContent>
               <PasswordSettings userId={user.id} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="preferences">
+          <Card>
+            <CardHeader>
+              <CardTitle>Preferences</CardTitle>
+              <CardDescription>
+                Customize your experience with appearance and display settings
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <PreferencesSettings />
             </CardContent>
           </Card>
         </TabsContent>

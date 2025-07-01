@@ -69,7 +69,7 @@ class OpenAIAnalysisService {
   ): Promise<string | null> {
     try {
       const response = await openai.images.generate({
-        model: "dall-e-3",
+        model: "gpt-4o",
         prompt: `Professional headshot photo of ${personaDescription}. Realistic, clean background, business casual attire, friendly expression, high quality portrait photography style.`,
         size: "1024x1024",
         quality: "standard",
@@ -382,6 +382,58 @@ Response format:
     "marketing_strategy": [],
     "customer_experience": [],
     "competitive_strategy": []
+  }
+}`,
+
+      rating_analysis: `${basePrompt}
+
+Analyze reviews by rating distribution to identify what drives each rating level. Focus on themes that correlate with specific ratings.
+
+Response format:
+{
+  "rating_analysis": {
+    "ratings": [
+      {
+        "rating": 5,
+        "count": 0,
+        "percentage": "XX%",
+        "top_themes": [
+          {
+            "theme": "Theme name",
+            "frequency": 10
+          }
+        ]
+      },
+      {
+        "rating": 4,
+        "count": 0,
+        "percentage": "XX%",
+        "top_themes": []
+      },
+      {
+        "rating": 3,
+        "count": 0,
+        "percentage": "XX%",
+        "top_themes": []
+      },
+      {
+        "rating": 2,
+        "count": 0,
+        "percentage": "XX%",
+        "top_themes": []
+      },
+      {
+        "rating": 1,
+        "count": 0,
+        "percentage": "XX%",
+        "top_themes": []
+      }
+    ],
+    "insights": {
+      "highest_rated_aspects": ["Aspect 1", "Aspect 2"],
+      "lowest_rated_aspects": ["Aspect 1", "Aspect 2"],
+      "summary": "Brief summary of what drives ratings"
+    }
   }
 }`,
     };

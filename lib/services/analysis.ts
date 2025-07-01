@@ -16,6 +16,7 @@ const ANALYSIS_TYPES = [
   "product_description",
   "sentiment",
   "voice_of_customer",
+  "rating_analysis",
   "four_w_matrix",
   "jtbd",
   "stp",
