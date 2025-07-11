@@ -73,39 +73,82 @@ export async function POST(
     const protocol = request.headers.get('x-forwarded-proto') || 'http';
     const baseUrl = `${protocol}://${host}`;
 
+    // Create a simple HTML page with the product data
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${product.name} - Analysis Report</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+            .header { text-align: center; margin-bottom: 40px; padding: 30px; background: #5546e1; color: white; border-radius: 12px; }
+            .title { font-size: 32px; font-weight: bold; margin-bottom: 10px; }
+            .subtitle { font-size: 18px; opacity: 0.9; }
+            .info { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
+            .section { margin-bottom: 30px; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+            .section h2 { color: #5546e1; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; }
+            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="title">Product Analysis Report</div>
+            <div class="subtitle">${product.name}</div>
+          </div>
+          
+          <div class="info">
+            <h3>Product Information</h3>
+            <div class="grid">
+              <div><strong>Product:</strong> ${product.name}</div>
+              <div><strong>Brand:</strong> ${product.brand.name}</div>
+              <div><strong>Reviews Analyzed:</strong> ${product.reviewsCount.toLocaleString()}</div>
+              <div><strong>Generated:</strong> ${new Date().toLocaleDateString()}</div>
+            </div>
+          </div>
+          
+          <div class="section">
+            <h2>Analysis Summary</h2>
+            <p>This report contains ${product.analyses.filter(a => a.status === 'completed').length} completed analyses for ${product.name}.</p>
+            <p>The analysis covers various aspects including sentiment analysis, customer personas, competition analysis, and strategic recommendations.</p>
+          </div>
+          
+          <div class="section">
+            <h2>Completed Analyses</h2>
+            <ul>
+              ${product.analyses
+                .filter(a => a.status === 'completed')
+                .map(a => {
+                  const titles = {
+                    sentiment: 'Sentiment Analysis',
+                    voice_of_customer: 'Voice of Customer',
+                    four_w_matrix: '4W Matrix',
+                    jtbd: 'Jobs to be Done',
+                    stp: 'STP Analysis',
+                    swot: 'SWOT Analysis',
+                    customer_journey: 'Customer Journey',
+                    personas: 'Customer Personas',
+                    competition: 'Competition Analysis',
+                    strategic_recommendations: 'Strategic Recommendations'
+                  };
+                  return `<li>${titles[a.type] || a.type}</li>`;
+                })
+                .join('')}
+            </ul>
+          </div>
+        </body>
+      </html>
+    `;
+
     try {
-      // Navigate to the print-friendly version of the product page
-      const printUrl = `${baseUrl}/products/${productId}/print?session=${encodeURIComponent(JSON.stringify(session))}`;
-
-      console.log('Navigating to:', printUrl);
-
-      const response = await page.goto(printUrl, {
-        waitUntil: 'domcontentloaded',
-        timeout: 30000,
-      });
-
-      if (!response) {
-        throw new Error('Failed to get response from page');
-      }
-
-      if (!response.ok()) {
-        throw new Error(`HTTP ${response.status()}: ${response.statusText()}`);
-      }
-
-      console.log('Page loaded successfully, status:', response.status());
-
-      // Wait a bit for initial content to load
-      await page.waitForTimeout(2000);
-
-      console.log('Content loaded, generating PDF...');
+      await page.setContent(htmlContent, { waitUntil: 'domcontentloaded' });
+      console.log('HTML content set successfully');
     } catch (navigationError) {
       console.error('Navigation error details:', {
         message: navigationError.message,
-        stack: navigationError.stack,
-        url: `${baseUrl}/products/${productId}/print`
+        stack: navigationError.stack
       });
       await browser.close();
-      throw new Error(`Failed to load page: ${navigationError.message}`);
+      throw new Error(`Failed to load content: ${navigationError.message}`);
     }
 
     // Generate PDF with basic settings
