@@ -3,36 +3,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import puppeteer from "puppeteer";
-import { execSync } from "child_process";
-
-// Function to find Chrome executable
-function findChrome() {
-  const possiblePaths = [
-    '/usr/bin/google-chrome-stable',
-    '/usr/bin/google-chrome',
-    '/usr/bin/chromium-browser',
-    '/usr/bin/chromium',
-  ];
-  
-  for (const path of possiblePaths) {
-    try {
-      execSync(`test -x ${path}`, { stdio: 'ignore' });
-      return path;
-    } catch (error) {
-      continue;
-    }
-  }
-  
-  // Try to find via which command
-  try {
-    const chromePath = execSync('which google-chrome-stable || which google-chrome || which chromium-browser || which chromium', { encoding: 'utf8' }).trim();
-    if (chromePath) return chromePath;
-  } catch (error) {
-    // Ignore error
-  }
-  
-  return null;
-}
 
 export async function POST(
   request: NextRequest,
@@ -70,42 +40,21 @@ export async function POST(
       );
     }
 
-    // Find Chrome executable
-    const chromePath = findChrome();
-    console.log('Chrome path found:', chromePath);
-    
-    if (!chromePath) {
-      throw new Error('Chrome/Chromium not found. Please install Chrome or Chromium.');
-    }
+    console.log('Starting PDF generation with Puppeteer...');
 
-    // Launch Puppeteer with detected Chrome path
-    const launchOptions: any = {
-      headless: true,
+    // Use Puppeteer's bundled Chromium with minimal configuration
+    const browser = await puppeteer.launch({
+      headless: 'new',
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--disable-gpu',
-        '--no-first-run',
-        '--no-zygote',
-        '--single-process',
-        '--disable-extensions',
-        '--disable-default-apps',
-        '--disable-background-timer-throttling',
-        '--disable-backgrounding-occluded-windows',
-        '--disable-renderer-backgrounding',
-        '--disable-features=TranslateUI',
         '--disable-web-security',
         '--allow-running-insecure-content',
+        '--disable-features=VizDisplayCompositor',
       ],
-    };
-
-    // Only set executablePath if we found Chrome
-    if (chromePath) {
-      launchOptions.executablePath = chromePath;
-    }
-
-    const browser = await puppeteer.launch(launchOptions);
+    });
 
     const page = await browser.newPage();
 
@@ -121,18 +70,28 @@ export async function POST(
     const protocol = request.headers.get('x-forwarded-proto') || 'http';
     const baseUrl = `${protocol}://${host}`;
 
-    // Navigate to the print-friendly version of the product page
-    const printUrl = `${baseUrl}/products/${productId}/print?session=${encodeURIComponent(JSON.stringify(session))}`;
+    try {
+      // Navigate to the print-friendly version of the product page
+      const printUrl = `${baseUrl}/products/${productId}/print?session=${encodeURIComponent(JSON.stringify(session))}`;
 
-    console.log('Navigating to:', printUrl);
+      console.log('Navigating to:', printUrl);
 
-    await page.goto(printUrl, {
-      waitUntil: 'networkidle0',
-      timeout: 60000,
-    });
+      await page.goto(printUrl, {
+        waitUntil: 'networkidle0',
+        timeout: 60000,
+      });
 
-    // Wait for charts and dynamic content to load
-    await page.waitForSelector('[data-analysis-loaded="true"]', { timeout: 30000 });
+      console.log('Page loaded, waiting for content...');
+
+      // Wait for charts and dynamic content to load
+      await page.waitForSelector('[data-analysis-loaded="true"]', { timeout: 30000 });
+      
+      console.log('Content loaded, generating PDF...');
+    } catch (navigationError) {
+      console.error('Navigation error:', navigationError);
+      await browser.close();
+      throw new Error(`Failed to load page: ${navigationError.message}`);
+    }
 
     // Generate PDF with high quality settings
     const pdfBuffer = await page.pdf({
