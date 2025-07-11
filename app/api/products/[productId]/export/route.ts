@@ -44,17 +44,19 @@ export async function POST(
 
     // Use Puppeteer's bundled Chromium with minimal configuration
     const browser = await puppeteer.launch({
-      headless: true,
+      headless: "new",
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
-        '--disable-gpu',
+        '--disable-accelerated-2d-canvas',
         '--no-first-run',
+        '--no-zygote',
+        '--disable-gpu',
         '--disable-background-timer-throttling',
         '--disable-backgrounding-occluded-windows',
-        '--disable-renderer-backgrounding',
-      ],
+        '--disable-renderer-backgrounding'
+      ]
     });
 
     console.log('Browser launched successfully');
@@ -95,7 +97,7 @@ export async function POST(
             <div class="title">Product Analysis Report</div>
             <div class="subtitle">${product.name}</div>
           </div>
-          
+
           <div class="info">
             <h3>Product Information</h3>
             <div class="grid">
@@ -105,13 +107,13 @@ export async function POST(
               <div><strong>Generated:</strong> ${new Date().toLocaleDateString()}</div>
             </div>
           </div>
-          
+
           <div class="section">
             <h2>Analysis Summary</h2>
             <p>This report contains ${product.analyses.filter(a => a.status === 'completed').length} completed analyses for ${product.name}.</p>
             <p>The analysis covers various aspects including sentiment analysis, customer personas, competition analysis, and strategic recommendations.</p>
           </div>
-          
+
           <div class="section">
             <h2>Completed Analyses</h2>
             <ul>
