@@ -16,7 +16,7 @@ interface RatingAnalysisProps {
           percentage: string;
           top_themes: Array<{
             theme: string;
-            frequency: number;
+            frequency: string;
           }>;
         }>;
         insights: {

@@ -1,6 +1,7 @@
 // components/analysis/stp-analysis.tsx
 "use client";
 
+import { useState } from "react";
 import {
   Card,
   CardContent,
@@ -9,6 +10,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { STPChart } from "@/components/charts/stp-chart";
 import {
   Target,
@@ -19,6 +27,16 @@ import {
   TrendingUp,
   Lightbulb,
   CheckCircle,
+  User,
+  GraduationCap,
+  Briefcase,
+  DollarSign,
+  Heart,
+  ShoppingCart,
+  MessageSquare,
+  Calendar,
+  Eye,
+  X,
 } from "lucide-react";
 
 interface STPAnalysisProps {
@@ -33,6 +51,40 @@ interface STPAnalysisProps {
           attractiveness_factors: string;
           opportunities: string;
           challenges: string;
+          example_quote?: string;
+          buyer_persona?: {
+            persona_name: string;
+            representation_percentage: string;
+            persona_intro: string;
+            demographics: {
+              age: string;
+              education_level: string;
+              job_title: string;
+              income_range: string;
+              living_environment: string;
+            };
+            psychographics: {
+              core_values: string;
+              lifestyle: string;
+              personality_traits: string;
+              hobbies_interests: string;
+            };
+            goals_motivations: string[];
+            pain_points_frustrations: string[];
+            buying_behavior: {
+              purchase_channels: string;
+              research_habits: string;
+              decision_triggers: string;
+              objections_barriers: string;
+            };
+            product_use_behavior: string[];
+            influencers_information_sources: {
+              platforms: string;
+              trusted_sources: string;
+              content_consumed: string;
+            };
+            day_in_the_life: string;
+          };
         }>;
         targeting_strategy: {
           selected_segments: string;
@@ -42,12 +94,12 @@ interface STPAnalysisProps {
         positioning_strategy: {
           positioning_statement: string;
           unique_value_proposition: string;
-          marketing_mix: string;
+          marketing_mix: string | object;
           messaging_channels: string;
         };
         implementation_recommendations: {
-          key_tactics: string;
-          monitoring_suggestions: string;
+          key_tactics: string | object;
+          monitoring_suggestions: string | object;
         };
       };
     };
@@ -57,6 +109,13 @@ interface STPAnalysisProps {
 }
 
 export function STPAnalysis({ analysis }: STPAnalysisProps) {
+  const [showPersonaDialog, setShowPersonaDialog] = useState(false);
+  const [selectedPersona, setSelectedPersona] = useState<any>(null);
+
+  const openPersonaDialog = (persona: any) => {
+    setSelectedPersona(persona);
+    setShowPersonaDialog(true);
+  };
   if (!analysis || analysis.status !== "completed") {
     return (
       <Card>
@@ -220,6 +279,59 @@ export function STPAnalysis({ analysis }: STPAnalysisProps) {
                       </p>
                     </div>
                   </div>
+
+                  {/* Example Quote */}
+                  {segment.example_quote && (
+                    <div className="bg-gray-50 p-3 rounded-lg border-l-4 border-gray-400">
+                      <h5 className="font-medium text-gray-800 mb-1">
+                        Customer Quote
+                      </h5>
+                      <p className="text-gray-700 text-sm italic">
+                        "{segment.example_quote}"
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Buyer Persona */}
+                  {segment.buyer_persona && (
+                    <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center">
+                          <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center mr-3">
+                            <User className="h-5 w-5 text-white" />
+                          </div>
+                          <div>
+                            <h5 className="font-semibold text-purple-900">
+                              {segment.buyer_persona.persona_name}
+                            </h5>
+                            <p className="text-sm text-purple-700">
+                              Represents{" "}
+                              {segment.buyer_persona.representation_percentage}{" "}
+                              of customers
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          onClick={() =>
+                            openPersonaDialog(segment.buyer_persona)
+                          }
+                          className="bg-purple-600 hover:bg-purple-700"
+                          size="sm"
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          View Persona
+                        </Button>
+                      </div>
+                      <p className="text-purple-800 italic text-sm">
+                        {segment.buyer_persona.persona_intro}
+                      </p>
+                      <div className="mt-2 text-sm text-purple-700">
+                        <span className="font-medium">Quick Profile:</span>{" "}
+                        {segment.buyer_persona.demographics.age},{" "}
+                        {segment.buyer_persona.demographics.job_title}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -292,9 +404,21 @@ export function STPAnalysis({ analysis }: STPAnalysisProps) {
 
           <div>
             <h4 className="font-semibold mb-2">Marketing Mix (4Ps)</h4>
-            <p className="text-gray-700">
-              {data.positioning_strategy.marketing_mix}
-            </p>
+            <div className="text-gray-700">
+              {typeof data.positioning_strategy.marketing_mix === "object" ? (
+                <div className="space-y-2">
+                  {Object.entries(data.positioning_strategy.marketing_mix).map(
+                    ([key, value]) => (
+                      <div key={key}>
+                        <strong>{key}:</strong> {String(value)}
+                      </div>
+                    ),
+                  )}
+                </div>
+              ) : (
+                <p>{data.positioning_strategy.marketing_mix}</p>
+              )}
+            </div>
           </div>
 
           <div>
@@ -323,9 +447,22 @@ export function STPAnalysis({ analysis }: STPAnalysisProps) {
               <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
               Key Tactics
             </h4>
-            <p className="text-gray-700">
-              {data.implementation_recommendations.key_tactics}
-            </p>
+            <div className="text-gray-700">
+              {typeof data.implementation_recommendations.key_tactics ===
+              "object" ? (
+                <div className="space-y-2">
+                  {Object.entries(
+                    data.implementation_recommendations.key_tactics,
+                  ).map(([key, value]) => (
+                    <div key={key}>
+                      <strong>{key}:</strong> {String(value)}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p>{data.implementation_recommendations.key_tactics}</p>
+              )}
+            </div>
           </div>
 
           <div>
@@ -333,12 +470,279 @@ export function STPAnalysis({ analysis }: STPAnalysisProps) {
               <TrendingUp className="h-4 w-4 mr-2 text-blue-600" />
               Monitoring & Measurement
             </h4>
-            <p className="text-gray-700">
-              {data.implementation_recommendations.monitoring_suggestions}
-            </p>
+            <div className="text-gray-700">
+              {typeof data.implementation_recommendations
+                .monitoring_suggestions === "object" ? (
+                <div className="space-y-2">
+                  {Object.entries(
+                    data.implementation_recommendations.monitoring_suggestions,
+                  ).map(([key, value]) => (
+                    <div key={key}>
+                      <strong>{key}:</strong> {String(value)}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p>
+                  {data.implementation_recommendations.monitoring_suggestions}
+                </p>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Buyer Persona Dialog */}
+      <Dialog open={showPersonaDialog} onOpenChange={setShowPersonaDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span className="flex items-center">
+                <div className="w-12 h-12 rounded-full bg-purple-600 flex items-center justify-center mr-3">
+                  <User className="h-6 w-6 text-white" />
+                </div>
+                {selectedPersona?.persona_name}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowPersonaDialog(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedPersona && (
+            <div className="space-y-6 mt-4">
+              {/* Introduction */}
+              <div className="bg-purple-50 p-4 rounded-lg">
+                <p className="text-purple-800 font-medium italic text-lg">
+                  {selectedPersona.persona_intro}
+                </p>
+                <Badge variant="secondary" className="mt-2">
+                  Represents {selectedPersona.representation_percentage} of your
+                  customers
+                </Badge>
+              </div>
+
+              {/* Demographics */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <User className="h-5 w-5 mr-2" />
+                    Demographics
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center">
+                      <User className="h-4 w-4 mr-2 text-gray-500" />
+                      <span className="text-sm">
+                        <strong>Age:</strong> {selectedPersona.demographics.age}
+                      </span>
+                    </div>
+                    <div className="flex items-center">
+                      <GraduationCap className="h-4 w-4 mr-2 text-gray-500" />
+                      <span className="text-sm">
+                        <strong>Education:</strong>{" "}
+                        {selectedPersona.demographics.education_level}
+                      </span>
+                    </div>
+                    <div className="flex items-center">
+                      <Briefcase className="h-4 w-4 mr-2 text-gray-500" />
+                      <span className="text-sm">
+                        <strong>Job:</strong>{" "}
+                        {selectedPersona.demographics.job_title}
+                      </span>
+                    </div>
+                    <div className="flex items-center">
+                      <DollarSign className="h-4 w-4 mr-2 text-gray-500" />
+                      <span className="text-sm">
+                        <strong>Income:</strong>{" "}
+                        {selectedPersona.demographics.income_range}
+                      </span>
+                    </div>
+                    <div className="flex items-center">
+                      <MapPin className="h-4 w-4 mr-2 text-gray-500" />
+                      <span className="text-sm">
+                        <strong>Location:</strong>{" "}
+                        {selectedPersona.demographics.living_environment}
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Psychographics */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Heart className="h-5 w-5 mr-2" />
+                    Psychographics
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div>
+                    <strong>Core Values:</strong>{" "}
+                    {selectedPersona.psychographics.core_values}
+                  </div>
+                  <div>
+                    <strong>Lifestyle:</strong>{" "}
+                    {selectedPersona.psychographics.lifestyle}
+                  </div>
+                  <div>
+                    <strong>Personality:</strong>{" "}
+                    {selectedPersona.psychographics.personality_traits}
+                  </div>
+                  <div>
+                    <strong>Hobbies:</strong>{" "}
+                    {selectedPersona.psychographics.hobbies_interests}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Goals & Motivations */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Target className="h-5 w-5 mr-2" />
+                    Goals & Motivations
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2">
+                    {selectedPersona.goals_motivations?.map(
+                      (goal: string, index: number) => (
+                        <li key={index} className="flex items-start">
+                          <div className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                          <span className="text-gray-700">{goal}</span>
+                        </li>
+                      ),
+                    )}
+                  </ul>
+                </CardContent>
+              </Card>
+
+              {/* Pain Points */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <AlertCircle className="h-5 w-5 mr-2" />
+                    Pain Points & Frustrations
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2">
+                    {selectedPersona.pain_points_frustrations?.map(
+                      (pain: string, index: number) => (
+                        <li key={index} className="flex items-start">
+                          <div className="w-2 h-2 bg-red-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                          <span className="text-gray-700">{pain}</span>
+                        </li>
+                      ),
+                    )}
+                  </ul>
+                </CardContent>
+              </Card>
+
+              {/* Buying Behavior */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <ShoppingCart className="h-5 w-5 mr-2" />
+                    Buying Behavior
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div>
+                    <strong>Purchase Channels:</strong>{" "}
+                    {selectedPersona.buying_behavior.purchase_channels}
+                  </div>
+                  <div>
+                    <strong>Research Habits:</strong>{" "}
+                    {selectedPersona.buying_behavior.research_habits}
+                  </div>
+                  <div>
+                    <strong>Decision Triggers:</strong>{" "}
+                    {selectedPersona.buying_behavior.decision_triggers}
+                  </div>
+                  <div>
+                    <strong>Barriers:</strong>{" "}
+                    {selectedPersona.buying_behavior.objections_barriers}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Product Use Behavior */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Target className="h-5 w-5 mr-2" />
+                    Product Use Behavior
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2">
+                    {selectedPersona.product_use_behavior?.map(
+                      (behavior: string, index: number) => (
+                        <li key={index} className="flex items-start">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                          <span className="text-gray-700">{behavior}</span>
+                        </li>
+                      ),
+                    )}
+                  </ul>
+                </CardContent>
+              </Card>
+
+              {/* Influencers & Information Sources */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <MessageSquare className="h-5 w-5 mr-2" />
+                    Influencers & Information Sources
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div>
+                    <strong>Platforms:</strong>{" "}
+                    {selectedPersona.influencers_information_sources.platforms}
+                  </div>
+                  <div>
+                    <strong>Trusted Sources:</strong>{" "}
+                    {
+                      selectedPersona.influencers_information_sources
+                        .trusted_sources
+                    }
+                  </div>
+                  <div>
+                    <strong>Content Consumed:</strong>{" "}
+                    {
+                      selectedPersona.influencers_information_sources
+                        .content_consumed
+                    }
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Day in the Life */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Calendar className="h-5 w-5 mr-2" />A Day in the Life
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-700 leading-relaxed">
+                    {selectedPersona.day_in_the_life}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

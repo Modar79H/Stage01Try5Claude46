@@ -32,6 +32,7 @@ import {
   Calendar,
   Eye,
   X,
+  Package,
 } from "lucide-react";
 
 interface PersonaData {
@@ -429,12 +430,34 @@ export function CustomerPersonas({ analysis }: CustomerPersonasProps) {
                 </CardContent>
               </Card>
 
-              {/* Information Sources */}
+              {/* Product Use Behavior */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Package className="h-5 w-5 mr-2" />
+                    Product Use Behavior
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2">
+                    {selectedPersona.product_use_behavior?.map(
+                      (behavior: string, index: number) => (
+                        <li key={index} className="flex items-start">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                          <span className="text-gray-700">{behavior}</span>
+                        </li>
+                      ),
+                    )}
+                  </ul>
+                </CardContent>
+              </Card>
+
+              {/* Influencers & Information Sources */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
                     <MessageSquare className="h-5 w-5 mr-2" />
-                    Information Sources
+                    Influencers & Information Sources
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">

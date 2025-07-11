@@ -498,6 +498,7 @@ class PineconeService {
       competition: { min: 30, ideal: 80, max: 200 },
       product_description: { min: 15, ideal: 40, max: 100 },
       strategic_recommendations: { min: 30, ideal: 80, max: 200 },
+      rating_analysis: { min: 20, ideal: 50, max: 150 },
     };
 
     const lengths = idealLengths[analysisType] || {
@@ -542,7 +543,12 @@ class PineconeService {
       "sentiment",
       "strategic_recommendations",
     ];
-    const balancedPreference = ["personas", "four_w_matrix", "stp"];
+    const balancedPreference = [
+      "personas",
+      "four_w_matrix",
+      "stp",
+      "rating_analysis",
+    ];
 
     if (extremePreference.includes(analysisType)) {
       if (rating <= 2 || rating >= 4.5) return 100;
@@ -606,6 +612,27 @@ class PineconeService {
         "switched from",
         "instead of",
       ],
+      rating_analysis: [
+        "rated",
+        "stars",
+        "star",
+        "score",
+        "because I gave",
+        "reason for rating",
+        "love",
+        "hate",
+        "excellent",
+        "terrible",
+        "amazing",
+        "awful",
+        "perfect",
+        "horrible",
+        "disappointed",
+        "satisfied",
+        "quality",
+        "worth",
+        "recommend",
+      ],
     };
 
     const relevantKeywords = keywords[analysisType] || [];
@@ -643,6 +670,8 @@ class PineconeService {
         "product features specifications attributes characteristics description quality materials components",
       strategic_recommendations:
         "recommendations strategy improvement opportunities growth suggestions enhancement future",
+      rating_analysis:
+        "rating quality satisfaction level score evaluation reasons why rated stars because quality assessment customer happiness drivers",
     };
 
     let query =

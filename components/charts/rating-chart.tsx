@@ -34,7 +34,7 @@ interface RatingChartProps {
       percentage: string;
       top_themes: Array<{
         theme: string;
-        frequency: number;
+        frequency: string;
       }>;
     }>;
   };
@@ -65,11 +65,13 @@ export function RatingChart({ data }: RatingChartProps) {
       borderWidth: 2,
       pointRadius: (context: any) => {
         const point = context.raw as any;
-        return Math.max(5, Math.min(15, point.frequency / 2));
+        const freq = parseFloat(point.frequency.replace("%", ""));
+        return Math.max(5, Math.min(15, freq / 2));
       },
       pointHoverRadius: (context: any) => {
         const point = context.raw as any;
-        return Math.max(7, Math.min(17, point.frequency / 2 + 2));
+        const freq = parseFloat(point.frequency.replace("%", ""));
+        return Math.max(7, Math.min(17, freq / 2 + 2));
       },
     })),
   };

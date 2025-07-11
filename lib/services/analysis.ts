@@ -456,6 +456,7 @@ class AnalysisProcessingService {
       personas: 150,
       competition: 100,
       strategic_recommendations: 100,
+      rating_analysis: 150,
     };
 
     return reviewCounts[analysisType] || 100;
