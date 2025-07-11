@@ -13,7 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Download, FileText, Loader2 } from "lucide-react";
+import { ArrowLeft, Download, FileText, Loader2, AlertCircle } from "lucide-react";
 
 interface Product {
   id: string;

@@ -51,7 +51,16 @@ export async function POST(
         '--no-first-run',
         '--no-zygote',
         '--single-process',
+        '--disable-extensions',
+        '--disable-default-apps',
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-renderer-backgrounding',
+        '--disable-features=TranslateUI',
+        '--disable-web-security',
+        '--allow-running-insecure-content',
       ],
+      executablePath: '/usr/bin/google-chrome-stable',
     });
 
     const page = await browser.newPage();

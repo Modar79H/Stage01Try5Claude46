@@ -69,7 +69,7 @@ class OpenAIAnalysisService {
   ): Promise<string | null> {
     try {
       const response = await openai.images.generate({
-        model: "gpt-4o",
+        model: "dall-e-3",
         prompt: `Professional headshot photo of ${personaDescription}. Realistic, clean background, business casual attire, friendly expression, high quality portrait photography style.`,
         size: "1024x1024",
         quality: "standard",
