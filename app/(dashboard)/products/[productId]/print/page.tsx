@@ -5,17 +5,17 @@ import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 
 // Import your existing analysis components
-import { ProductDescription } from "@/components/analysis/product-description";
-import { SentimentAnalysis } from "@/components/analysis/sentiment-analysis";
-import { VoiceOfCustomer } from "@/components/analysis/voice-of-customer";
-import { FourWMatrix } from "@/components/analysis/four-w-matrix";
-import { JTBDAnalysis } from "@/components/analysis/jtbd-analysis";
-import { STPAnalysis } from "@/components/analysis/stp-analysis";
-import { SWOTAnalysis } from "@/components/analysis/swot-analysis";
-import { CustomerJourney } from "@/components/analysis/customer-journey";
-import { CustomerPersonas } from "@/components/analysis/customer-personas";
-import { CompetitionAnalysis } from "@/components/analysis/competition-analysis";
-import { StrategicRecommendations } from "@/components/analysis/strategic-recommendations";
+import ProductDescription from "@/components/analysis/product-description";
+import SentimentAnalysis from "@/components/analysis/sentiment-analysis";
+import VoiceOfCustomer from "@/components/analysis/voice-of-customer";
+import FourWMatrix from "@/components/analysis/four-w-matrix";
+import JTBDAnalysis from "@/components/analysis/jtbd-analysis";
+import STPAnalysis from "@/components/analysis/stp-analysis";
+import SWOTAnalysis from "@/components/analysis/swot-analysis";
+import CustomerJourney from "@/components/analysis/customer-journey";
+import CustomerPersonas from "@/components/analysis/customer-personas";
+import CompetitionAnalysis from "@/components/analysis/competition-analysis";
+import StrategicRecommendations from "@/components/analysis/strategic-recommendations";
 
 interface Product {
   id: string;
