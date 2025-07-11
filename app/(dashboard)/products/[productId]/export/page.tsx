@@ -104,6 +104,49 @@ export default function ExportPage() {
     product?.analyses.filter((a) => a.status === "completed") || [];
   const totalAnalyses = product?.analyses.length || 0;
 
+    const generateReport = async () => {
+        setIsGenerating(true);
+        setProgress(0);
+        setError("");
+
+        try {
+            const progressInterval = setInterval(() => {
+                setProgress((prev) => Math.min(prev + 10, 90));
+            }, 200);
+
+            const response = await fetch(`/api/products/${productId}/export`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            });
+
+            clearInterval(progressInterval);
+            setProgress(100);
+
+            if (response.ok) {
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                setPdfUrl(url);
+
+                // Auto-download
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `${product?.name || "product"}-analysis-report.html`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            } else {
+                const errorData = await response.json();
+                setError(errorData.error || "Failed to generate report");
+            }
+        } catch (error) {
+            setError("Error generating report");
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       {/* Header */}
@@ -128,14 +171,13 @@ export default function ExportPage() {
       {product && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center">
-              <FileText className="h-5 w-5 mr-2" />
-              Report Details
-            </CardTitle>
-            <CardDescription>
-              Your comprehensive analysis report will include all completed
-              analyses
-            </CardDescription>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Generate Analysis Report
+              </CardTitle>
+              <CardDescription>
+                Generate a printable HTML report of all completed analyses. You can save it as PDF using your browser's print function.
+              </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -268,10 +310,23 @@ export default function ExportPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="text-center">
-              <Button onClick={generatePDF} size="lg" className="px-8">
-                <Download className="h-5 w-5 mr-2" />
-                Generate PDF Report
-              </Button>
+                <Button
+                    onClick={generateReport}
+                    disabled={isGenerating}
+                    className="px-8"
+                >
+                    {isGenerating ? (
+                        <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Generating Report...
+                        </>
+                    ) : (
+                        <>
+                            <Download className="h-5 w-5 mr-2" />
+                            Generate Report
+                        </>
+                    )}
+                </Button>
               <p className="text-sm text-gray-600 mt-2">
                 Generate a comprehensive PDF report with all completed analyses
               </p>
