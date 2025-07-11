@@ -3,6 +3,36 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import puppeteer from "puppeteer";
+import { execSync } from "child_process";
+
+// Function to find Chrome executable
+function findChrome() {
+  const possiblePaths = [
+    '/usr/bin/google-chrome-stable',
+    '/usr/bin/google-chrome',
+    '/usr/bin/chromium-browser',
+    '/usr/bin/chromium',
+  ];
+  
+  for (const path of possiblePaths) {
+    try {
+      execSync(`test -x ${path}`, { stdio: 'ignore' });
+      return path;
+    } catch (error) {
+      continue;
+    }
+  }
+  
+  // Try to find via which command
+  try {
+    const chromePath = execSync('which google-chrome-stable || which google-chrome || which chromium-browser || which chromium', { encoding: 'utf8' }).trim();
+    if (chromePath) return chromePath;
+  } catch (error) {
+    // Ignore error
+  }
+  
+  return null;
+}
 
 export async function POST(
   request: NextRequest,
@@ -40,8 +70,16 @@ export async function POST(
       );
     }
 
-    // Launch Puppeteer
-    const browser = await puppeteer.launch({
+    // Find Chrome executable
+    const chromePath = findChrome();
+    console.log('Chrome path found:', chromePath);
+    
+    if (!chromePath) {
+      throw new Error('Chrome/Chromium not found. Please install Chrome or Chromium.');
+    }
+
+    // Launch Puppeteer with detected Chrome path
+    const launchOptions: any = {
       headless: true,
       args: [
         '--no-sandbox',
@@ -60,8 +98,14 @@ export async function POST(
         '--disable-web-security',
         '--allow-running-insecure-content',
       ],
-      executablePath: '/usr/bin/google-chrome-stable',
-    });
+    };
+
+    // Only set executablePath if we found Chrome
+    if (chromePath) {
+      launchOptions.executablePath = chromePath;
+    }
+
+    const browser = await puppeteer.launch(launchOptions);
 
     const page = await browser.newPage();
 

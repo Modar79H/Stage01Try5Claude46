@@ -4,7 +4,6 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -37,22 +36,24 @@ export default function ExportPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        const response = await fetch(`/api/products/${productId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setProduct(data.product);
+        } else {
+          setError("Failed to fetch product data");
+        }
+      } catch (error) {
+        setError("Error fetching product data");
+      }
+    };
+
     fetchProduct();
   }, [productId]);
 
-  const fetchProduct = async () => {
-    try {
-      const response = await fetch(`/api/products/${productId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setProduct(data.product);
-      } else {
-        setError("Failed to fetch product data");
-      }
-    } catch (error) {
-      setError("Error fetching product data");
-    }
-  };
+
 
   const generatePDF = async () => {
     setIsGenerating(true);
