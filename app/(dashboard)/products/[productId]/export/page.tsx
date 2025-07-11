@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
 import { ArrowLeft, Download, FileText, Loader2, AlertCircle } from "lucide-react";
 
 interface Product {

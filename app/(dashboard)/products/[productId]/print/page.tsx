@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -8,7 +7,7 @@ import { useParams, useSearchParams } from "next/navigation";
 import { ProductDescription } from "@/components/analysis/product-description";
 import { SentimentAnalysis } from "@/components/analysis/sentiment-analysis";
 import { VoiceOfCustomer } from "@/components/analysis/voice-of-customer";
-import { FourWMatrix } from "@/components/analysis/four-w-matrix";
+import { FourWMatrix from "@/components/analysis/four-w-matrix";
 import { JTBDAnalysis } from "@/components/analysis/jtbd-analysis";
 import { STPAnalysis } from "@/components/analysis/stp-analysis";
 import { SWOTAnalysis } from "@/components/analysis/swot-analysis";
@@ -116,22 +115,22 @@ export default function PrintPage() {
             -webkit-print-color-adjust: exact !important;
             color-adjust: exact !important;
           }
-          
+
           .page-break {
             page-break-before: always;
           }
-          
+
           .avoid-break {
             page-break-inside: avoid;
           }
         }
-        
+
         body {
           background: white;
           margin: 0;
           padding: 0;
         }
-        
+
         .print-container {
           background: white;
           padding: 20px;
@@ -139,7 +138,7 @@ export default function PrintPage() {
           font-size: 14px;
           line-height: 1.6;
         }
-        
+
         .print-header {
           text-align: center;
           margin-bottom: 40px;
@@ -148,18 +147,18 @@ export default function PrintPage() {
           color: white;
           border-radius: 12px;
         }
-        
+
         .print-title {
           font-size: 32px;
           font-weight: bold;
           margin-bottom: 10px;
         }
-        
+
         .print-subtitle {
           font-size: 18px;
           opacity: 0.9;
         }
-        
+
         .print-info {
           background: #f8f9fa;
           padding: 20px;
@@ -167,7 +166,7 @@ export default function PrintPage() {
           margin-bottom: 30px;
           border-left: 4px solid #5546e1;
         }
-        
+
         .print-section {
           margin-bottom: 40px;
           background: white;
@@ -175,30 +174,30 @@ export default function PrintPage() {
           padding: 20px;
           box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        
+
         .print-section h2 {
           color: #5546e1;
           border-bottom: 2px solid #e5e7eb;
           padding-bottom: 10px;
           margin-bottom: 20px;
         }
-        
+
         /* Ensure charts render properly */
         canvas, svg {
           max-width: 100% !important;
           height: auto !important;
         }
-        
+
         /* Hide interactive elements */
         button, .cursor-pointer {
           display: none !important;
         }
-        
+
         /* Ensure good contrast for printing */
         .text-gray-600 {
           color: #4b5563 !important;
         }
-        
+
         .text-gray-500 {
           color: #6b7280 !important;
         }
@@ -247,7 +246,7 @@ export default function PrintPage() {
               competition: "Competition Analysis",
               strategic_recommendations: "Strategic Recommendations",
             };
-            
+
             return (
               <div key={analysis.id} className="flex justify-between">
                 <span>{index + 1}. {titles[analysis.type] || analysis.type}</span>
