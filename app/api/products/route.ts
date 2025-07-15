@@ -163,7 +163,20 @@ export async function POST(request: NextRequest) {
       );
     } catch (pineconeError) {
       console.error(`❌ Error storing reviews in Pinecone:`, pineconeError);
-      throw pineconeError;
+
+      // Clean up the created product since Pinecone upload failed
+      await prisma.product.delete({
+        where: { id: product.id },
+      });
+
+      return NextResponse.json(
+        {
+          error:
+            "We're having trouble processing your reviews right now. Please try uploading your product again in a few minutes.",
+          details: "Our review processing service is temporarily unavailable.",
+        },
+        { status: 503 },
+      );
     }
 
     // Store review metadata in database
@@ -227,7 +240,24 @@ export async function POST(request: NextRequest) {
             `❌ Error storing competitor reviews:`,
             competitorPineconeError,
           );
-          throw competitorPineconeError;
+
+          // Clean up the created product and competitor since Pinecone upload failed
+          await prisma.competitor.delete({
+            where: { id: competitorRecord.id },
+          });
+          await prisma.product.delete({
+            where: { id: product.id },
+          });
+
+          return NextResponse.json(
+            {
+              error:
+                "We're having trouble processing your competitor reviews right now. Please try uploading your product again in a few minutes.",
+              details:
+                "Our review processing service is temporarily unavailable.",
+            },
+            { status: 503 },
+          );
         }
 
         const competitorReviewRecords = competitorReviewsData.map(

@@ -24,6 +24,7 @@ import { SWOTAnalysis } from "@/components/analysis/swot-analysis";
 import { CustomerJourney } from "@/components/analysis/customer-journey";
 import { CustomerPersonas } from "@/components/analysis/customer-personas";
 import { CompetitionAnalysis } from "@/components/analysis/competition-analysis";
+import { SmartCompetitionAnalysis } from "@/components/analysis/smart-competition-analysis";
 import { StrategicRecommendations } from "@/components/analysis/strategic-recommendations";
 import { ProductActions } from "@/components/product-actions";
 import { formatDate } from "@/lib/utils";
@@ -82,7 +83,7 @@ export default async function ProductAnalysisPage({
   );
 
   const hasCompetitors = product.competitors.length > 0;
-  const expectedAnalyses = hasCompetitors ? 11 : 10;
+  const expectedAnalyses = hasCompetitors ? 12 : 10; // 12 includes smart_competition
   const completedAnalyses = product.analyses.filter(
     (a) => a.status === "completed",
   ).length;
@@ -249,6 +250,17 @@ export default async function ProductAnalysisPage({
                 defaultOpen={false}
               >
                 <CompetitionAnalysis analysis={analyses.competition} />
+              </CollapsibleAnalysis>
+            )}
+
+            {hasCompetitors && (
+              <CollapsibleAnalysis
+                title="🧠 Smart Competition Analysis"
+                defaultOpen={false}
+              >
+                <SmartCompetitionAnalysis
+                  analysis={analyses.smart_competition}
+                />
               </CollapsibleAnalysis>
             )}
 

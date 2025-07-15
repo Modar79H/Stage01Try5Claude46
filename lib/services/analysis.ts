@@ -3,6 +3,8 @@ import { prisma } from "../prisma";
 import { pineconeService } from "./pinecone";
 import { openaiService } from "./openai";
 import { sleep } from "../utils";
+import fs from "fs/promises";
+import path from "path";
 
 export interface AnalysisProgress {
   productId: string;
@@ -24,6 +26,7 @@ const ANALYSIS_TYPES = [
   "customer_journey",
   "personas",
   "competition",
+  "smart_competition", // Runs after required analyses are complete
   "strategic_recommendations",
 ] as const;
 
@@ -133,6 +136,8 @@ class AnalysisProcessingService {
 
           // Get competitor reviews if needed
           let competitorReviews = undefined;
+          let existingAnalyses = undefined;
+
           if (analysisType === "competition" && hasCompetitors) {
             const competitorIds = product.competitors.map((c) => c.id);
             competitorReviews = await pineconeService.getCompetitorReviews(
@@ -144,11 +149,53 @@ class AnalysisProcessingService {
             );
           }
 
+          // Special handling for smart competition analysis
+          if (analysisType === "smart_competition") {
+            // Skip if no competitors
+            if (!hasCompetitors) {
+              console.log("Skipping smart_competition - no competitors found");
+              continue;
+            }
+
+            // Get existing analysis results to compare against
+            existingAnalyses =
+              await this.getExistingAnalysesForComparison(productId);
+
+            // Skip if required analyses are missing
+            const requiredAnalyses = [
+              "product_description",
+              "swot",
+              "stp",
+              "customer_journey",
+            ];
+            const missingAnalyses = requiredAnalyses.filter(
+              (type) => !existingAnalyses[type],
+            );
+
+            if (missingAnalyses.length > 0) {
+              console.log(
+                `Skipping smart_competition - missing required analyses: ${missingAnalyses.join(", ")}`,
+              );
+              continue;
+            }
+
+            // Run analyses for each competitor
+            const competitorAnalyses = await this.runCompetitorAnalyses(
+              product,
+              userId,
+              product.brand.id,
+            );
+
+            // Pass competitor analyses to the smart competition analysis
+            existingAnalyses.competitorAnalyses = competitorAnalyses;
+          }
+
           // Perform the analysis
           const result = await openaiService.performAnalysis(
             analysisType,
             reviews,
             competitorReviews,
+            existingAnalyses,
           );
 
           if (result.status === "completed") {
@@ -412,20 +459,52 @@ class AnalysisProcessingService {
     personas: any[],
   ): Promise<void> {
     try {
-      for (const persona of personas) {
+      for (let i = 0; i < personas.length; i++) {
+        const persona = personas[i];
         if (persona.demographics && persona.persona_intro) {
           const description = `${persona.persona_intro} - ${persona.demographics.age} ${persona.demographics.job_title}`;
           const imageUrl =
             await openaiService.generatePersonaImage(description);
 
           if (imageUrl) {
-            // Store image URL in persona data
-            persona.image_url = imageUrl;
+            try {
+              // Download the image
+              const response = await fetch(imageUrl);
+              if (!response.ok) throw new Error("Failed to download image");
+
+              const buffer = await response.arrayBuffer();
+
+              // Generate unique filename
+              const timestamp = Date.now();
+              const filename = `persona_${productId}_${i}_${timestamp}.png`;
+              const localPath = `/images/personas/${filename}`;
+              const fullPath = path.join(
+                process.cwd(),
+                "public",
+                "images",
+                "personas",
+                filename,
+              );
+
+              // Save the image locally
+              await fs.writeFile(fullPath, Buffer.from(buffer));
+
+              // Store local path instead of OpenAI URL
+              persona.image_url = localPath;
+              console.log(`✅ Saved persona image locally: ${localPath}`);
+            } catch (downloadError) {
+              console.error(
+                "Error downloading/saving persona image:",
+                downloadError,
+              );
+              // Fall back to OpenAI URL if download fails
+              persona.image_url = imageUrl;
+            }
           }
         }
       }
 
-      // Update the personas analysis with image URLs
+      // Update the personas analysis with local image paths
       await prisma.analysis.update({
         where: {
           productId_type: {
@@ -455,11 +534,162 @@ class AnalysisProcessingService {
       customer_journey: 120,
       personas: 150,
       competition: 100,
+      smart_competition: 200, // Needs more reviews for comprehensive comparison
       strategic_recommendations: 100,
       rating_analysis: 150,
     };
 
     return reviewCounts[analysisType] || 100;
+  }
+
+  // Get existing analyses needed for smart competition comparison
+  private async getExistingAnalysesForComparison(
+    productId: string,
+  ): Promise<Record<string, any>> {
+    const requiredAnalyses = [
+      "product_description",
+      "swot",
+      "stp",
+      "customer_journey",
+    ];
+    const existingAnalyses: Record<string, any> = {};
+
+    for (const analysisType of requiredAnalyses) {
+      try {
+        const analysis = await prisma.analysis.findUnique({
+          where: {
+            productId_type: {
+              productId,
+              type: analysisType as any,
+            },
+          },
+        });
+
+        if (analysis && analysis.status === "completed" && analysis.data) {
+          existingAnalyses[analysisType] = analysis.data;
+        }
+      } catch (error) {
+        console.warn(
+          `Could not fetch ${analysisType} analysis for comparison:`,
+          error,
+        );
+      }
+    }
+
+    return existingAnalyses;
+  }
+
+  // New method to run analyses for each competitor
+  private async runCompetitorAnalyses(
+    product: any,
+    userId: string,
+    brandId: string,
+  ): Promise<Record<string, any>> {
+    const competitorAnalyses: Record<string, any> = {};
+
+    for (const competitor of product.competitors) {
+      const competitorId = competitor.id;
+      competitorAnalyses[competitorId] = {};
+
+      // Run Product Description analysis for competitor
+      const productDescReviews = await pineconeService.getReviewsForAnalysis(
+        product.id,
+        "product_description",
+        userId,
+        brandId,
+        50,
+        false,
+        undefined,
+        competitor.name,
+        competitorId,
+      );
+
+      if (productDescReviews.length > 0) {
+        const productDescResult = await openaiService.performAnalysis(
+          "product_description",
+          productDescReviews,
+        );
+        if (productDescResult.status === "completed") {
+          competitorAnalyses[competitorId].product_description =
+            productDescResult.data;
+        }
+      }
+
+      // Run SWOT analysis (Strengths/Weaknesses only) for competitor
+      const swotReviews = await pineconeService.getReviewsForAnalysis(
+        product.id,
+        "swot",
+        userId,
+        brandId,
+        100,
+        false,
+        undefined,
+        competitor.name,
+        competitorId,
+      );
+
+      if (swotReviews.length > 0) {
+        const swotResult = await openaiService.performCompetitorSWOTAnalysis(
+          swotReviews,
+        );
+        if (swotResult.status === "completed") {
+          competitorAnalyses[competitorId].swot = swotResult.data;
+        }
+      }
+
+      // Run Segmentation analysis for competitor
+      const segmentationReviews = await pineconeService.getReviewsForAnalysis(
+        product.id,
+        "stp",
+        userId,
+        brandId,
+        150,
+        false,
+        undefined,
+        competitor.name,
+        competitorId,
+      );
+
+      if (segmentationReviews.length > 0) {
+        const segmentationResult = await openaiService.performAnalysis(
+          "stp",
+          segmentationReviews,
+        );
+        if (segmentationResult.status === "completed") {
+          competitorAnalyses[competitorId].stp = segmentationResult.data;
+        }
+      }
+
+      // Run Customer Journey analysis for competitor
+      const journeyReviews = await pineconeService.getReviewsForAnalysis(
+        product.id,
+        "customer_journey",
+        userId,
+        brandId,
+        120,
+        false,
+        undefined,
+        competitor.name,
+        competitorId,
+      );
+
+      if (journeyReviews.length > 0) {
+        const journeyResult = await openaiService.performAnalysis(
+          "customer_journey",
+          journeyReviews,
+        );
+        if (journeyResult.status === "completed") {
+          competitorAnalyses[competitorId].customer_journey =
+            journeyResult.data;
+        }
+      }
+
+      // Add competitor metadata
+      competitorAnalyses[competitorId].name = competitor.name;
+      competitorAnalyses[competitorId].id = competitorId;
+    }
+
+    return competitorAnalyses;
   }
 
   async getAnalysisStatus(

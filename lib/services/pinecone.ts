@@ -178,12 +178,9 @@ class PineconeService {
       );
 
       try {
-        const upsertResult = await this.index
-          .namespace(namespace)
-          .upsert(vectors);
+        await this.index.namespace(namespace).upsert(vectors);
         console.log(
-          `✅ Batch ${Math.floor(i / batchSize) + 1} upserted successfully:`,
-          upsertResult,
+          `✅ Batch ${Math.floor(i / batchSize) + 1} upserted successfully (${vectors.length} vectors)`,
         );
         pineconeIds.push(...vectors.map((v) => v.id));
       } catch (upsertError) {
@@ -216,6 +213,7 @@ class PineconeService {
     includeCompetitors: boolean = false,
     analysisVersion?: string,
     productName?: string,
+    competitorId?: string,
   ): Promise<ReviewMetadata[]> {
     try {
       const namespace = this.getProductNamespace(userId, brandId, productId);
@@ -227,6 +225,7 @@ class PineconeService {
         includeCompetitors,
         analysisVersion,
         productName,
+        competitorId,
       );
     } catch (error) {
       console.error("Error querying reviews from Pinecone:", error);
@@ -243,6 +242,7 @@ class PineconeService {
     includeCompetitors: boolean,
     analysisVersion?: string,
     productName?: string,
+    competitorId?: string,
   ): Promise<ReviewMetadata[]> {
     const poolSize = Math.min(limit * 3, 500);
     const diversePool = await this.getDiverseReviewPool(
@@ -251,6 +251,7 @@ class PineconeService {
       poolSize,
       includeCompetitors,
       analysisVersion,
+      competitorId,
     );
 
     const scoredReviews = await this.scoreReviewsForAnalysis(
@@ -269,13 +270,16 @@ class PineconeService {
     poolSize: number,
     includeCompetitors: boolean,
     analysisVersion?: string,
+    competitorId?: string,
   ): Promise<ReviewMetadata[]> {
     const reviewsPerRating = Math.floor(poolSize / 5);
     const baseFilter: Record<string, any> = {
       productId: { $eq: productId },
     };
 
-    if (!includeCompetitors) {
+    if (competitorId) {
+      baseFilter.competitorId = { $eq: competitorId };
+    } else if (!includeCompetitors) {
       baseFilter.competitorId = { $exists: false };
     }
 
@@ -612,6 +616,27 @@ class PineconeService {
         "switched from",
         "instead of",
       ],
+      smart_competition: [
+        "features",
+        "includes",
+        "specifications",
+        "love about",
+        "hate about",
+        "advantage",
+        "disadvantage",
+        "wish it had",
+        "compared to",
+        "better than",
+        "worse than",
+        "I am",
+        "use for",
+        "lifestyle",
+        "found through",
+        "decided because",
+        "shipping",
+        "unboxing",
+        "customer service",
+      ],
       rating_analysis: [
         "rated",
         "stars",
@@ -713,6 +738,80 @@ class PineconeService {
       console.error("Error querying competitor reviews:", error);
       throw error;
     }
+  }
+
+  // NEW: Smart retrieval for competitor reviews with analysis-specific optimization
+  async getSmartCompetitorReviews(
+    productId: string,
+    competitorIds: string[],
+    analysisType: string,
+    userId: string,
+    brandId: string,
+    limit: number = 100,
+    productName?: string,
+  ): Promise<ReviewMetadata[]> {
+    try {
+      const namespace = this.getProductNamespace(userId, brandId, productId);
+
+      // Get diverse pool for each competitor (balanced representation)
+      const perCompetitorLimit = Math.ceil((limit * 3) / competitorIds.length);
+      const allReviews: ReviewMetadata[] = [];
+
+      for (const competitorId of competitorIds) {
+        const competitorPool = await this.getDiverseCompetitorPool(
+          productId,
+          competitorId,
+          namespace,
+          perCompetitorLimit,
+        );
+        allReviews.push(...competitorPool);
+      }
+
+      // Score and select best reviews for this analysis type
+      const scoredReviews = await this.scoreReviewsForAnalysis(
+        allReviews,
+        analysisType,
+        productName,
+      );
+
+      return this.selectBalancedReviews(scoredReviews, limit, analysisType);
+    } catch (error) {
+      console.error("Error getting smart competitor reviews:", error);
+      throw error;
+    }
+  }
+
+  // Get diverse pool of competitor reviews with rating distribution
+  private async getDiverseCompetitorPool(
+    productId: string,
+    competitorId: string,
+    namespace: string,
+    poolSize: number,
+  ): Promise<ReviewMetadata[]> {
+    const reviewsPerRating = Math.floor(poolSize / 5);
+    const allReviews: ReviewMetadata[] = [];
+
+    // Get reviews from each rating level for balanced perspective
+    for (let rating = 1; rating <= 5; rating++) {
+      const filter = {
+        productId: { $eq: productId },
+        competitorId: { $eq: competitorId },
+        rating: { $eq: rating },
+      };
+
+      const queryResponse = await this.index.namespace(namespace).query({
+        vector: new Array(1536).fill(0),
+        filter,
+        topK: reviewsPerRating,
+        includeMetadata: true,
+      });
+
+      const reviews =
+        queryResponse.matches?.map((match: any) => match.metadata) || [];
+      allReviews.push(...reviews);
+    }
+
+    return allReviews;
   }
 
   // NEW: Get product namespace stats
