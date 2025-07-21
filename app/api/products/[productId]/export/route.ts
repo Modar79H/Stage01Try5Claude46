@@ -41,40 +41,72 @@ export async function POST(
 
     console.log("Generating PDF-ready HTML...");
 
+    // Helper function to safely ensure an array
+    const ensureArray = (value: any): any[] => {
+      if (Array.isArray(value)) return value;
+      if (value && typeof value === "object") {
+        // If it's an object, try to extract an array from common properties
+        if (value.data && Array.isArray(value.data)) return value.data;
+        if (value.items && Array.isArray(value.items)) return value.items;
+        if (value.results && Array.isArray(value.results)) return value.results;
+        // If it's an object with multiple properties, return empty array to avoid errors
+        return [];
+      }
+      return [];
+    };
+
+    // Helper function to safely render array content
+    const safeArrayRender = (
+      arr: any,
+      renderer: (item: any, index?: number) => string,
+    ): string => {
+      try {
+        return ensureArray(arr).map(renderer).join("");
+      } catch (error) {
+        console.error("Error rendering array:", error);
+        return "<p>Error rendering content</p>";
+      }
+    };
+
     // Helper function to render analysis content based on type
     const renderAnalysisContent = (analysis: any) => {
-      const { type, data } = analysis;
+      try {
+        const { type, data } = analysis;
 
-      switch (type) {
-        case "product_description":
-          const productDesc = data.product_description;
-          return `
+        switch (type) {
+          case "product_description":
+            const productDesc = data.product_description;
+            return `
             <div class="analysis-content">
               <h3>Product Description</h3>
               <p><strong>Summary:</strong> ${productDesc.summary || "N/A"}</p>
               <div>
                 <strong>Key Attributes:</strong>
                 <ul>
-                  ${(productDesc.attributes || []).map((attr: string) => `<li>${attr}</li>`).join("")}
+                  ${ensureArray(productDesc.attributes)
+                    .map((attr: string) => `<li>${attr}</li>`)
+                    .join("")}
                 </ul>
               </div>
               <div>
                 <strong>Variations:</strong>
                 <ul>
-                  ${(productDesc.variations || []).map((var_: string) => `<li>${var_}</li>`).join("")}
+                  ${ensureArray(productDesc.variations)
+                    .map((var_: string) => `<li>${var_}</li>`)
+                    .join("")}
                 </ul>
               </div>
             </div>
           `;
 
-        case "sentiment":
-          const sentiment = data.sentiment_analysis;
-          return `
+          case "sentiment":
+            const sentiment = data.sentiment_analysis;
+            return `
             <div class="analysis-content">
               <h3>Sentiment Analysis</h3>
               <div>
                 <h4>Customer Likes</h4>
-                ${(sentiment?.customer_likes || [])
+                ${ensureArray(sentiment?.customer_likes)
                   .map(
                     (like: any) => `
                   <div class="segment-item">
@@ -89,7 +121,7 @@ export async function POST(
               </div>
               <div>
                 <h4>Customer Dislikes</h4>
-                ${(sentiment?.customer_dislikes || [])
+                ${ensureArray(sentiment?.customer_dislikes)
                   .map(
                     (dislike: any) => `
                   <div class="segment-item">
@@ -105,15 +137,15 @@ export async function POST(
             </div>
           `;
 
-        case "rating_analysis":
-          const ratingData = data.rating_analysis;
-          return `
+          case "rating_analysis":
+            const ratingData = data.rating_analysis;
+            return `
             <div class="analysis-content">
               <h3>Rating Analysis</h3>
               <p><strong>Summary:</strong> ${ratingData?.insights?.summary || "N/A"}</p>
               <div>
                 <h4>Rating Breakdown</h4>
-                ${(ratingData?.ratings || [])
+                ${ensureArray(ratingData?.ratings)
                   .map(
                     (rating: any) => `
                   <div class="segment-item">
@@ -121,7 +153,7 @@ export async function POST(
                     <div>
                       <strong>Top Themes:</strong>
                       <ul>
-                        ${(rating.top_themes || [])
+                        ${ensureArray(rating.top_themes)
                           .map(
                             (theme: any) =>
                               `<li>${theme.theme} (${theme.frequency})</li>`,
@@ -138,25 +170,29 @@ export async function POST(
                 <h4>Key Insights</h4>
                 <p><strong>Highest Rated Aspects:</strong></p>
                 <ul>
-                  ${(ratingData?.insights?.highest_rated_aspects || []).map((aspect: string) => `<li>${aspect}</li>`).join("")}
+                  ${ensureArray(ratingData?.insights?.highest_rated_aspects)
+                    .map((aspect: string) => `<li>${aspect}</li>`)
+                    .join("")}
                 </ul>
                 <p><strong>Lowest Rated Aspects:</strong></p>
                 <ul>
-                  ${(ratingData?.insights?.lowest_rated_aspects || []).map((aspect: string) => `<li>${aspect}</li>`).join("")}
+                  ${ensureArray(ratingData?.insights?.lowest_rated_aspects)
+                    .map((aspect: string) => `<li>${aspect}</li>`)
+                    .join("")}
                 </ul>
               </div>
             </div>
           `;
 
-        case "voice_of_customer":
-          const voc = data.voice_of_customer;
-          return `
+          case "voice_of_customer":
+            const voc = data.voice_of_customer;
+            return `
             <div class="analysis-content">
               <h3>Voice of Customer</h3>
               <div>
                 <strong>Top Keywords:</strong>
                 <ul>
-                  ${(voc?.keywords || [])
+                  ${ensureArray(voc?.keywords)
                     .map(
                       (keyword: any) =>
                         `<li><strong>${keyword.word}</strong> - ${keyword.frequency} mentions</li>`,
@@ -167,15 +203,15 @@ export async function POST(
             </div>
           `;
 
-        case "four_w_matrix":
-          const fourW = data.four_w_matrix;
-          return `
+          case "four_w_matrix":
+            const fourW = data.four_w_matrix;
+            return `
             <div class="analysis-content">
               <h3>4W Matrix Analysis</h3>
               <div class="w-matrix-grid">
                 <div>
                   <h4>Who (Target Customers)</h4>
-                  ${(fourW?.who || [])
+                  ${ensureArray(fourW?.who)
                     .map(
                       (item: any) => `
                     <div class="segment-item">
@@ -237,9 +273,9 @@ export async function POST(
             </div>
           `;
 
-        case "jtbd":
-          const jtbd = data.jtbd_analysis;
-          return `
+          case "jtbd":
+            const jtbd = data.jtbd_analysis;
+            return `
             <div class="analysis-content">
               <h3>Jobs to be Done Analysis</h3>
               <div>
@@ -293,9 +329,9 @@ export async function POST(
             </div>
           `;
 
-        case "stp":
-          const stp = data.stp_analysis;
-          return `
+          case "stp":
+            const stp = data.stp_analysis;
+            return `
             <div class="analysis-content">
               <h3>STP Analysis</h3>
               
@@ -381,15 +417,15 @@ export async function POST(
             </div>
           `;
 
-        case "swot":
-          const swot = data.swot_analysis;
-          return `
+          case "swot":
+            const swot = data.swot_analysis;
+            return `
             <div class="analysis-content">
               <h3>SWOT Analysis</h3>
               <div class="swot-grid">
                 <div>
                   <h4>Strengths</h4>
-                  ${(swot?.strengths || [])
+                  ${ensureArray(swot?.strengths)
                     .map(
                       (item: any) => `
                     <div class="segment-item">
@@ -447,9 +483,9 @@ export async function POST(
             </div>
           `;
 
-        case "customer_journey":
-          const journey = data.customer_journey;
-          return `
+          case "customer_journey":
+            const journey = data.customer_journey;
+            return `
             <div class="analysis-content">
               <h3>Customer Journey</h3>
               <div>
@@ -539,9 +575,9 @@ export async function POST(
             </div>
           `;
 
-        case "personas":
-          const personas = data.customer_personas;
-          return `
+          case "personas":
+            const personas = data.customer_personas;
+            return `
             <div class="analysis-content">
               <h3>Customer Personas</h3>
               ${(personas || [])
@@ -580,9 +616,9 @@ export async function POST(
             </div>
           `;
 
-        case "competition":
-          const competition = data.competition_analysis;
-          return `
+          case "competition":
+            const competition = data.competition_analysis;
+            return `
             <div class="analysis-content">
               <h3>Competition Analysis</h3>
               <div>
@@ -614,9 +650,9 @@ export async function POST(
             </div>
           `;
 
-        case "strategic_recommendations":
-          const recommendations = data.strategic_recommendations;
-          return `
+          case "strategic_recommendations":
+            const recommendations = data.strategic_recommendations;
+            return `
             <div class="analysis-content">
               <h3>Strategic Recommendations</h3>
               <p><strong>Executive Summary:</strong> ${recommendations?.executive_summary || "N/A"}</p>
@@ -691,8 +727,266 @@ export async function POST(
             </div>
           `;
 
-        default:
-          return `<div class="analysis-content"><p>Analysis data available in dashboard.</p></div>`;
+          case "smart_competition":
+            const smartComp = data.smart_competition_analysis;
+            if (!smartComp) {
+              return `<div class="analysis-content"><p>Smart Competition Analysis data not available.</p></div>`;
+            }
+
+            return `
+            <div class="analysis-content">
+              <h3>Smart Competition Analysis</h3>
+              
+              <!-- Executive Summary -->
+              <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                <h4>Executive Summary</h4>
+                <p><strong>Competitive Position:</strong> ${smartComp.executive_summary?.competitive_position || "N/A"}</p>
+                <p><strong>Key Advantages:</strong></p>
+                <ul>
+                  ${ensureArray(smartComp.executive_summary?.key_advantages)
+                    .map((adv: string) => `<li>${adv}</li>`)
+                    .join("")}
+                </ul>
+                <p><strong>Key Vulnerabilities:</strong></p>
+                <ul>
+                  ${ensureArray(
+                    smartComp.executive_summary?.key_vulnerabilities,
+                  )
+                    .map((vul: string) => `<li>${vul}</li>`)
+                    .join("")}
+                </ul>
+                <p><strong>Strategic Priorities:</strong></p>
+                <ul>
+                  ${ensureArray(
+                    smartComp.executive_summary?.strategic_priorities,
+                  )
+                    .map((pri: string) => `<li>${pri}</li>`)
+                    .join("")}
+                </ul>
+                <p><strong>Market Opportunity:</strong> ${smartComp.executive_summary?.market_opportunity || "N/A"}</p>
+              </div>
+              
+              <!-- Product Attributes Comparison -->
+              <div style="margin-bottom: 20px;">
+                <h4>Product Attributes Comparison</h4>
+                <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                  <thead>
+                    <tr style="background: #e2e8f0;">
+                      <th style="padding: 10px; text-align: left; border: 1px solid #cbd5e0;">Attribute</th>
+                      <th style="padding: 10px; text-align: center; border: 1px solid #cbd5e0;">You Have</th>
+                      <th style="padding: 10px; text-align: center; border: 1px solid #cbd5e0;">Competitors</th>
+                      <th style="padding: 10px; text-align: center; border: 1px solid #cbd5e0;">Differentiation Score</th>
+                      <th style="padding: 10px; text-align: center; border: 1px solid #cbd5e0;">Strategic Value</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${ensureArray(
+                      smartComp.product_attributes?.attribute_comparison,
+                    )
+                      .map(
+                        (attr: any) => `
+                      <tr>
+                        <td style="padding: 10px; border: 1px solid #cbd5e0;">
+                          <strong>${attr.attribute || "N/A"}</strong>
+                          ${attr.explanation ? `<br><small style="color: #718096;">${attr.explanation}</small>` : ""}
+                        </td>
+                        <td style="padding: 10px; text-align: center; border: 1px solid #cbd5e0;">${attr.you_have ? "✅" : "❌"}</td>
+                        <td style="padding: 10px; text-align: center; border: 1px solid #cbd5e0;">
+                          ${Object.entries(attr.competitors || {})
+                            .map(
+                              ([name, has]) => `${name}: ${has ? "✅" : "❌"}`,
+                            )
+                            .join("<br>")}
+                        </td>
+                        <td style="padding: 10px; text-align: center; border: 1px solid #cbd5e0;">${attr.differentiation_score || 0}</td>
+                        <td style="padding: 10px; text-align: center; border: 1px solid #cbd5e0;">${attr.strategic_value || "N/A"}</td>
+                      </tr>
+                    `,
+                      )
+                      .join("")}
+                  </tbody>
+                </table>
+              </div>
+              
+              <!-- SWOT Matrix Comparison -->
+              <div style="margin-bottom: 20px;">
+                <h4>SWOT Matrix Comparison</h4>
+                
+                <!-- Strengths -->
+                <div style="margin-bottom: 15px;">
+                  <h5>Strengths Analysis</h5>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div>
+                      <strong>Your Strengths:</strong>
+                      <ul>
+                        ${ensureArray(
+                          smartComp.swot_matrix?.strength_comparison
+                            ?.your_strengths,
+                        )
+                          .map(
+                            (s: any) =>
+                              `<li><strong>${typeof s === "string" ? s : s.strength || "N/A"}</strong>
+                          ${typeof s === "object" && s.explanation ? `<br><small>${s.explanation}</small>` : ""}</li>`,
+                          )
+                          .join("")}
+                      </ul>
+                    </div>
+                    <div>
+                      <strong>Competitor Strengths:</strong>
+                      ${Object.entries(
+                        smartComp.swot_matrix?.strength_comparison
+                          ?.competitor_strengths || {},
+                      )
+                        .map(
+                          ([name, strengths]) => `
+                        <div style="margin-bottom: 10px;">
+                          <strong>${name}:</strong>
+                          <ul>
+                            ${ensureArray(strengths)
+                              .map(
+                                (s: any) =>
+                                  `<li>${typeof s === "string" ? s : s.strength || "N/A"}
+                              ${typeof s === "object" && s.explanation ? `<br><small>${s.explanation}</small>` : ""}</li>`,
+                              )
+                              .join("")}
+                          </ul>
+                        </div>
+                      `,
+                        )
+                        .join("")}
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Competitive Advantages -->
+                <div style="margin-bottom: 15px;">
+                  <strong>Competitive Advantages:</strong>
+                  <ul>
+                    ${ensureArray(
+                      smartComp.swot_matrix?.strength_comparison
+                        ?.competitive_advantages,
+                    )
+                      .map(
+                        (adv: any) =>
+                          `<li><strong>${typeof adv === "string" ? adv : adv.advantage || "N/A"}</strong>
+                      ${typeof adv === "object" && adv.explanation ? `<br><small>${adv.explanation}</small>` : ""}</li>`,
+                      )
+                      .join("")}
+                  </ul>
+                </div>
+                
+                <!-- Opportunities and Threats -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                  <div style="background: #e6f4ff; padding: 15px; border-radius: 8px;">
+                    <strong>Derived Opportunities:</strong>
+                    <ul>
+                      ${ensureArray(
+                        smartComp.swot_matrix?.derived_opportunities,
+                      )
+                        .map(
+                          (opp: any) =>
+                            `<li>${typeof opp === "string" ? opp : opp.opportunity || "N/A"}
+                        ${typeof opp === "object" && opp.explanation ? `<br><small>${opp.explanation}</small>` : ""}</li>`,
+                        )
+                        .join("")}
+                    </ul>
+                  </div>
+                  <div style="background: #fff1f0; padding: 15px; border-radius: 8px;">
+                    <strong>Derived Threats:</strong>
+                    <ul>
+                      ${ensureArray(smartComp.swot_matrix?.derived_threats)
+                        .map(
+                          (threat: any) =>
+                            `<li>${typeof threat === "string" ? threat : threat.threat || "N/A"}
+                        ${typeof threat === "object" && threat.explanation ? `<br><small>${threat.explanation}</small>` : ""}</li>`,
+                        )
+                        .join("")}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Customer Journey Analysis -->
+              <div style="margin-bottom: 20px;">
+                <h4>Customer Journey Friction Analysis</h4>
+                <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                  <thead>
+                    <tr style="background: #e2e8f0;">
+                      <th style="padding: 10px; text-align: left; border: 1px solid #cbd5e0;">Journey Stage</th>
+                      <th style="padding: 10px; text-align: center; border: 1px solid #cbd5e0;">Your Friction Score</th>
+                      <th style="padding: 10px; text-align: center; border: 1px solid #cbd5e0;">Competitor Scores</th>
+                      <th style="padding: 10px; text-align: center; border: 1px solid #cbd5e0;">Winner</th>
+                      <th style="padding: 10px; text-align: left; border: 1px solid #cbd5e0;">Analysis</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${["awareness", "purchase", "post_purchase"]
+                      .map((stage) => {
+                        const stageData = smartComp.journey_analysis?.[stage];
+                        if (!stageData) return "";
+                        return `
+                        <tr>
+                          <td style="padding: 10px; border: 1px solid #cbd5e0; text-transform: capitalize;"><strong>${stage.replace("_", " ")}</strong></td>
+                          <td style="padding: 10px; text-align: center; border: 1px solid #cbd5e0;">${stageData.your_friction_score || "N/A"}</td>
+                          <td style="padding: 10px; text-align: center; border: 1px solid #cbd5e0;">
+                            ${Object.entries(stageData.competitor_scores || {})
+                              .map(([name, score]) => `${name}: ${score}`)
+                              .join("<br>")}
+                          </td>
+                          <td style="padding: 10px; text-align: center; border: 1px solid #cbd5e0;">${stageData.winner || "N/A"}</td>
+                          <td style="padding: 10px; border: 1px solid #cbd5e0;">
+                            <small>${stageData.gap_analysis || "N/A"}</small>
+                            ${stageData.improvement_opportunity ? `<br><small><strong>Opportunity:</strong> ${stageData.improvement_opportunity}</small>` : ""}
+                            ${stageData.competitive_advantage ? `<br><small><strong>Advantage:</strong> ${stageData.competitive_advantage}</small>` : ""}
+                          </td>
+                        </tr>
+                      `;
+                      })
+                      .join("")}
+                  </tbody>
+                </table>
+              </div>
+              
+              <!-- Segmentation Analysis -->
+              <div style="margin-bottom: 20px;">
+                <h4>Customer Segmentation Analysis</h4>
+                <p><strong>Your Primary Segments:</strong></p>
+                <ul>
+                  ${ensureArray(
+                    smartComp.segmentation_analysis?.your_primary_segments,
+                  )
+                    .map(
+                      (seg: any) =>
+                        `<li><strong>${typeof seg === "string" ? seg : seg.segment || "N/A"}</strong>
+                    ${typeof seg === "object" && seg.explanation ? `<br><small>${seg.explanation}</small>` : ""}</li>`,
+                    )
+                    .join("")}
+                </ul>
+                
+                <p><strong>Untapped Segments:</strong></p>
+                <ul>
+                  ${ensureArray(
+                    smartComp.segmentation_analysis?.untapped_segments,
+                  )
+                    .map(
+                      (seg: any) =>
+                        `<li><strong>${typeof seg === "string" ? seg : seg.segment || "N/A"}</strong>
+                    ${typeof seg === "object" && seg.explanation ? `<br><small>${seg.explanation}</small>` : ""}</li>`,
+                    )
+                    .join("")}
+                </ul>
+                
+                <p><strong>Positioning Opportunity:</strong> ${smartComp.segmentation_analysis?.positioning_opportunity || "N/A"}</p>
+              </div>
+            </div>
+          `;
+
+          default:
+            return `<div class="analysis-content"><p>Analysis data available in dashboard.</p></div>`;
+        }
+      } catch (error) {
+        console.error(`Error rendering ${analysis.type} analysis:`, error);
+        return `<div class="analysis-content"><p>Error rendering ${analysis.type} analysis. Please check the console for details.</p></div>`;
       }
     };
 
@@ -932,6 +1226,7 @@ export async function POST(
                     customer_journey: "Customer Journey",
                     personas: "Customer Personas",
                     competition: "Competition Analysis",
+                    smart_competition: "Smart Competition Analysis",
                     strategic_recommendations: "Strategic Recommendations",
                   };
                   return `<li>${titles[a.type] || a.type}</li>`;
@@ -955,6 +1250,7 @@ export async function POST(
                 customer_journey: "Customer Journey Mapping",
                 personas: "Customer Personas",
                 competition: "Competition Analysis",
+                smart_competition: "Smart Competition Analysis",
                 strategic_recommendations: "Strategic Recommendations",
               };
 

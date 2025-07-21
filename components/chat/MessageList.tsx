@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { User, Bot, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { EnhancedMessage } from "./EnhancedMessage";
 
 interface Message {
   role: "user" | "assistant";
@@ -28,10 +29,11 @@ export default function MessageList({
       {messages.length === 0 && (
         <div className="text-center text-muted-foreground py-8">
           <Bot size={48} className="mx-auto mb-4 opacity-50" />
-          <p className="text-lg font-medium">Welcome to Marketing Strategist!</p>
+          <p className="text-lg font-medium">Welcome to Customer Support!</p>
           <p className="text-sm mt-2">
-            I'm here to help you understand your customers and develop effective
-            marketing strategies based on your review data and analyses.
+            I'm here to help you with any questions about our platform,
+            features, or how to get the most out of your customer review
+            analyses.
           </p>
         </div>
       )}
@@ -77,7 +79,7 @@ function MessageBubble({ message }: { message: Message }) {
       setIsTyping(true);
       let index = 0;
       const typingSpeed = 10; // ms per character
-      
+
       const typeWriter = () => {
         if (index < message.content.length) {
           setDisplayContent(message.content.substring(0, index + 1));
@@ -104,13 +106,13 @@ function MessageBubble({ message }: { message: Message }) {
     <div
       className={cn(
         "flex items-start space-x-2",
-        isUser && "flex-row-reverse space-x-reverse"
+        isUser && "flex-row-reverse space-x-reverse",
       )}
     >
       <div
         className={cn(
           "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
-          isUser ? "bg-blue-500 text-white" : "bg-primary/10"
+          isUser ? "bg-blue-500 text-white" : "bg-primary/10",
         )}
       >
         {isUser ? (
@@ -128,18 +130,26 @@ function MessageBubble({ message }: { message: Message }) {
           isUser
             ? "bg-blue-500 text-white"
             : message.isError
-            ? "bg-red-50 text-red-900"
-            : "bg-muted"
+              ? "bg-red-50 text-red-900"
+              : "bg-muted",
         )}
       >
-        <p className="whitespace-pre-wrap break-words">{displayContent}</p>
-        
+        {isUser ? (
+          <p className="whitespace-pre-wrap break-words">{displayContent}</p>
+        ) : (
+          <EnhancedMessage
+            content={displayContent}
+            role={message.role}
+            className={message.isError ? "text-red-900" : ""}
+          />
+        )}
+
         {message.metadata?.sources && (
           <div className="mt-2 pt-2 border-t border-white/20 text-xs opacity-70">
             Sources: {message.metadata.sources.join(", ")}
           </div>
         )}
-        
+
         {message.timestamp && (
           <p className="text-xs opacity-60 mt-1">
             {new Date(message.timestamp).toLocaleTimeString()}

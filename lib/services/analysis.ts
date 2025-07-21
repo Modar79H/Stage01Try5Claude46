@@ -230,6 +230,17 @@ class AnalysisProcessingService {
                 result.data.customer_personas,
               );
             }
+
+            // Generate persona images for STP analysis
+            if (analysisType === "stp" && result.data.stp_analysis) {
+              const stpPersonas = result.data.stp_analysis.segmentation
+                ?.filter((segment: any) => segment.buyer_persona)
+                .map((segment: any) => segment.buyer_persona);
+              
+              if (stpPersonas && stpPersonas.length > 0) {
+                await this.generateSTPPersonaImages(productId, result.data.stp_analysis);
+              }
+            }
           } else {
             errors.push(`${analysisType}: ${result.error || "Unknown error"}`);
 
@@ -413,6 +424,17 @@ class AnalysisProcessingService {
           );
         }
 
+        // Generate persona images for STP analysis when reprocessing
+        if (analysisType === "stp" && result.data.stp_analysis) {
+          const stpPersonas = result.data.stp_analysis.segmentation
+            ?.filter((segment: any) => segment.buyer_persona)
+            .map((segment: any) => segment.buyer_persona);
+          
+          if (stpPersonas && stpPersonas.length > 0) {
+            await this.generateSTPPersonaImages(productId, result.data.stp_analysis);
+          }
+        }
+
         return { success: true };
       } else {
         // Store failed analysis
@@ -522,6 +544,80 @@ class AnalysisProcessingService {
     }
   }
 
+  private async generateSTPPersonaImages(
+    productId: string,
+    stpAnalysis: any,
+  ): Promise<void> {
+    try {
+      let updateNeeded = false;
+      
+      for (const segment of stpAnalysis.segmentation) {
+        if (segment.buyer_persona && segment.buyer_persona.demographics && segment.buyer_persona.persona_intro) {
+          const persona = segment.buyer_persona;
+          const description = `${persona.persona_intro} - ${persona.demographics.age} ${persona.demographics.job_title}`;
+          const imageUrl = await openaiService.generatePersonaImage(description);
+
+          if (imageUrl) {
+            try {
+              // Download the image
+              const response = await fetch(imageUrl);
+              if (!response.ok) throw new Error("Failed to download image");
+
+              const buffer = await response.arrayBuffer();
+
+              // Generate unique filename
+              const timestamp = Date.now();
+              const segmentIndex = stpAnalysis.segmentation.indexOf(segment);
+              const filename = `persona_stp_${productId}_${segmentIndex}_${timestamp}.png`;
+              const localPath = `/images/personas/${filename}`;
+              const fullPath = path.join(
+                process.cwd(),
+                "public",
+                "images",
+                "personas",
+                filename,
+              );
+
+              // Save the image locally
+              await fs.writeFile(fullPath, Buffer.from(buffer));
+
+              // Store local path instead of OpenAI URL
+              persona.image_url = localPath;
+              updateNeeded = true;
+              console.log(`✅ Saved STP persona image locally: ${localPath}`);
+            } catch (downloadError) {
+              console.error(
+                "Error downloading/saving STP persona image:",
+                downloadError,
+              );
+              // Fall back to OpenAI URL if download fails
+              persona.image_url = imageUrl;
+              updateNeeded = true;
+            }
+          }
+        }
+      }
+
+      // Update the STP analysis with local image paths
+      if (updateNeeded) {
+        await prisma.analysis.update({
+          where: {
+            productId_type: {
+              productId,
+              type: "stp",
+            },
+          },
+          data: {
+            data: { stp_analysis: stpAnalysis },
+          },
+        });
+      }
+    } catch (error) {
+      console.error("Error generating STP persona images:", error);
+      // Don't throw - images are nice to have but not critical
+    }
+  }
+
   private getOptimalReviewCount(analysisType: AnalysisType): number {
     const reviewCounts = {
       product_description: 50,
@@ -587,54 +683,81 @@ class AnalysisProcessingService {
   ): Promise<Record<string, any>> {
     const competitorAnalyses: Record<string, any> = {};
 
+    console.log(`🔍 Starting competitor analyses for ${product.competitors.length} competitors`);
+
     for (const competitor of product.competitors) {
       const competitorId = competitor.id;
+      const competitorName = competitor.name;
       competitorAnalyses[competitorId] = {};
 
-      // Run Product Description analysis for competitor
-      const productDescReviews = await pineconeService.getReviewsForAnalysis(
-        product.id,
-        "product_description",
-        userId,
-        brandId,
-        50,
-        false,
-        undefined,
-        competitor.name,
-        competitorId,
-      );
+      console.log(`📊 Analyzing competitor: ${competitorName} (ID: ${competitorId})`);
 
-      if (productDescReviews.length > 0) {
-        const productDescResult = await openaiService.performAnalysis(
+      // Run Product Description analysis for competitor
+      try {
+        const productDescReviews = await pineconeService.getReviewsForAnalysis(
+          product.id,
           "product_description",
-          productDescReviews,
+          userId,
+          brandId,
+          50,
+          false,
+          undefined,
+          competitorName,
+          competitorId,
         );
-        if (productDescResult.status === "completed") {
-          competitorAnalyses[competitorId].product_description =
-            productDescResult.data;
+
+        console.log(`✅ Found ${productDescReviews.length} product description reviews for ${competitorName}`);
+
+        if (productDescReviews.length > 0) {
+          const productDescResult = await openaiService.performAnalysis(
+            "product_description",
+            productDescReviews,
+          );
+          if (productDescResult.status === "completed") {
+            competitorAnalyses[competitorId].product_description =
+              productDescResult.data;
+            console.log(`✅ Product description analysis completed for ${competitorName}`);
+          } else {
+            console.log(`❌ Product description analysis failed for ${competitorName}: ${productDescResult.error}`);
+          }
+        } else {
+          console.log(`⚠️ No product description reviews found for ${competitorName}`);
         }
+      } catch (error) {
+        console.error(`❌ Error in product description analysis for ${competitorName}:`, error);
       }
 
       // Run SWOT analysis (Strengths/Weaknesses only) for competitor
-      const swotReviews = await pineconeService.getReviewsForAnalysis(
-        product.id,
-        "swot",
-        userId,
-        brandId,
-        100,
-        false,
-        undefined,
-        competitor.name,
-        competitorId,
-      );
-
-      if (swotReviews.length > 0) {
-        const swotResult = await openaiService.performCompetitorSWOTAnalysis(
-          swotReviews,
+      try {
+        const swotReviews = await pineconeService.getReviewsForAnalysis(
+          product.id,
+          "swot",
+          userId,
+          brandId,
+          100,
+          false,
+          undefined,
+          competitorName,
+          competitorId,
         );
-        if (swotResult.status === "completed") {
-          competitorAnalyses[competitorId].swot = swotResult.data;
+
+        console.log(`✅ Found ${swotReviews.length} SWOT reviews for ${competitorName}`);
+
+        if (swotReviews.length > 0) {
+          const swotResult = await openaiService.performCompetitorSWOTAnalysis(
+            swotReviews,
+          );
+          if (swotResult.status === "completed") {
+            competitorAnalyses[competitorId].swot = swotResult.data;
+            console.log(`✅ SWOT analysis completed for ${competitorName}`);
+          } else {
+            console.log(`❌ SWOT analysis failed for ${competitorName}: ${swotResult.error}`);
+          }
+        } else {
+          console.log(`⚠️ No SWOT reviews found for ${competitorName}`);
         }
+      } catch (error) {
+        console.error(`❌ Error in SWOT analysis for ${competitorName}:`, error);
       }
 
       // Run Segmentation analysis for competitor
@@ -685,10 +808,13 @@ class AnalysisProcessingService {
       }
 
       // Add competitor metadata
-      competitorAnalyses[competitorId].name = competitor.name;
+      competitorAnalyses[competitorId].name = competitorName;
       competitorAnalyses[competitorId].id = competitorId;
+      
+      console.log(`🎯 Completed analyses for ${competitorName}:`, Object.keys(competitorAnalyses[competitorId]));
     }
 
+    console.log(`🏁 Competitor analyses summary:`, Object.keys(competitorAnalyses));
     return competitorAnalyses;
   }
 

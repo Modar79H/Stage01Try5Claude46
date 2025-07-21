@@ -33,7 +33,9 @@ import {
   Eye,
   X,
   Package,
+  MessageCircle,
 } from "lucide-react";
+import { PersonaChatbot } from "@/components/persona/PersonaChatbot";
 
 interface PersonaData {
   persona_name: string;
@@ -78,13 +80,23 @@ interface CustomerPersonasProps {
     status: string;
     error?: string;
   };
+  brandId?: string;
+  productId?: string;
+  productName?: string;
 }
 
-export function CustomerPersonas({ analysis }: CustomerPersonasProps) {
+export function CustomerPersonas({
+  analysis,
+  brandId,
+  productId,
+  productName,
+}: CustomerPersonasProps) {
   const [selectedPersona, setSelectedPersona] = useState<PersonaData | null>(
     null,
   );
   const [showPersonaDialog, setShowPersonaDialog] = useState(false);
+  const [showChatbot, setShowChatbot] = useState(false);
+  const [chatPersona, setChatPersona] = useState<PersonaData | null>(null);
 
   if (!analysis || analysis.status !== "completed") {
     return (
@@ -140,6 +152,11 @@ export function CustomerPersonas({ analysis }: CustomerPersonasProps) {
   const openPersonaDialog = (persona: PersonaData) => {
     setSelectedPersona(persona);
     setShowPersonaDialog(true);
+  };
+
+  const openPersonaChat = (persona: PersonaData) => {
+    setChatPersona(persona);
+    setShowChatbot(true);
   };
 
   return (
@@ -228,14 +245,26 @@ export function CustomerPersonas({ analysis }: CustomerPersonasProps) {
                 </div>
               </div>
 
-              <Button
-                onClick={() => openPersonaDialog(persona)}
-                className="w-full"
-                variant="outline"
-              >
-                <Eye className="h-4 w-4 mr-2" />
-                View Full Analysis
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => openPersonaDialog(persona)}
+                  className="flex-1"
+                  variant="outline"
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  View Details
+                </Button>
+                {brandId && productId && (
+                  <Button
+                    onClick={() => openPersonaChat(persona)}
+                    className="flex-1"
+                    variant="default"
+                  >
+                    <MessageCircle className="h-4 w-4 mr-2" />
+                    Chat
+                  </Button>
+                )}
+              </div>
             </CardContent>
           </Card>
         ))}
@@ -499,6 +528,18 @@ export function CustomerPersonas({ analysis }: CustomerPersonasProps) {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Persona Chatbot */}
+      {brandId && productId && chatPersona && (
+        <PersonaChatbot
+          isOpen={showChatbot}
+          onClose={() => setShowChatbot(false)}
+          personaData={chatPersona}
+          brandId={brandId}
+          productId={productId}
+          productName={productName || "this product"}
+        />
+      )}
     </div>
   );
 }

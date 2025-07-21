@@ -12,7 +12,7 @@ export default function SuggestedPrompts({
   prompts,
   onSelect,
 }: SuggestedPromptsProps) {
-  if (prompts.length === 0) return null;
+  if (!prompts || prompts.length === 0) return null;
 
   return (
     <div className="p-4 border-t">

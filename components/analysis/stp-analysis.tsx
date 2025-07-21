@@ -37,7 +37,9 @@ import {
   Calendar,
   Eye,
   X,
+  MessageCircle,
 } from "lucide-react";
+import { PersonaChatbot } from "@/components/persona/PersonaChatbot";
 
 interface STPAnalysisProps {
   analysis?: {
@@ -106,15 +108,25 @@ interface STPAnalysisProps {
     status: string;
     error?: string;
   };
+  brandId?: string;
+  productId?: string;
+  productName?: string;
 }
 
-export function STPAnalysis({ analysis }: STPAnalysisProps) {
+export function STPAnalysis({ analysis, brandId, productId, productName }: STPAnalysisProps) {
   const [showPersonaDialog, setShowPersonaDialog] = useState(false);
   const [selectedPersona, setSelectedPersona] = useState<any>(null);
+  const [showChatbot, setShowChatbot] = useState(false);
+  const [chatPersona, setChatPersona] = useState<any>(null);
 
   const openPersonaDialog = (persona: any) => {
     setSelectedPersona(persona);
     setShowPersonaDialog(true);
+  };
+
+  const openPersonaChat = (persona: any) => {
+    setChatPersona(persona);
+    setShowChatbot(true);
   };
   if (!analysis || analysis.status !== "completed") {
     return (
@@ -297,9 +309,17 @@ export function STPAnalysis({ analysis }: STPAnalysisProps) {
                     <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center">
-                          <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center mr-3">
-                            <User className="h-5 w-5 text-white" />
-                          </div>
+                          {segment.buyer_persona.image_url ? (
+                            <img
+                              src={segment.buyer_persona.image_url}
+                              alt={segment.buyer_persona.persona_name}
+                              className="w-10 h-10 rounded-full object-cover mr-3"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center mr-3">
+                              <User className="h-5 w-5 text-white" />
+                            </div>
+                          )}
                           <div>
                             <h5 className="font-semibold text-purple-900">
                               {segment.buyer_persona.persona_name}
@@ -311,16 +331,30 @@ export function STPAnalysis({ analysis }: STPAnalysisProps) {
                             </p>
                           </div>
                         </div>
-                        <Button
-                          onClick={() =>
-                            openPersonaDialog(segment.buyer_persona)
-                          }
-                          className="bg-purple-600 hover:bg-purple-700"
-                          size="sm"
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Persona
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() =>
+                              openPersonaDialog(segment.buyer_persona)
+                            }
+                            className="bg-purple-600 hover:bg-purple-700"
+                            size="sm"
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            View
+                          </Button>
+                          {brandId && productId && (
+                            <Button
+                              onClick={() =>
+                                openPersonaChat(segment.buyer_persona)
+                              }
+                              variant="outline"
+                              size="sm"
+                            >
+                              <MessageCircle className="h-4 w-4 mr-2" />
+                              Chat
+                            </Button>
+                          )}
+                        </div>
                       </div>
                       <p className="text-purple-800 italic text-sm">
                         {segment.buyer_persona.persona_intro}
@@ -498,9 +532,17 @@ export function STPAnalysis({ analysis }: STPAnalysisProps) {
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               <span className="flex items-center">
-                <div className="w-12 h-12 rounded-full bg-purple-600 flex items-center justify-center mr-3">
-                  <User className="h-6 w-6 text-white" />
-                </div>
+                {selectedPersona?.image_url ? (
+                  <img
+                    src={selectedPersona.image_url}
+                    alt={selectedPersona.persona_name}
+                    className="w-12 h-12 rounded-full object-cover mr-3"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-purple-600 flex items-center justify-center mr-3">
+                    <User className="h-6 w-6 text-white" />
+                  </div>
+                )}
                 {selectedPersona?.persona_name}
               </span>
               <Button
@@ -743,6 +785,18 @@ export function STPAnalysis({ analysis }: STPAnalysisProps) {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Persona Chatbot */}
+      {brandId && productId && chatPersona && (
+        <PersonaChatbot
+          isOpen={showChatbot}
+          onClose={() => setShowChatbot(false)}
+          personaData={chatPersona}
+          brandId={brandId}
+          productId={productId}
+          productName={productName || 'this product'}
+        />
+      )}
     </div>
   );
 }

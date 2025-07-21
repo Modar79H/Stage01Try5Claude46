@@ -27,6 +27,9 @@ import { CompetitionAnalysis } from "@/components/analysis/competition-analysis"
 import { SmartCompetitionAnalysis } from "@/components/analysis/smart-competition-analysis";
 import { StrategicRecommendations } from "@/components/analysis/strategic-recommendations";
 import { ProductActions } from "@/components/product-actions";
+import { MarketingStrategist } from "@/components/marketing/MarketingStrategist";
+import { ProductImprovementStrategist } from "@/components/improvement/ProductImprovementStrategist";
+import { AmazonPlatformAdviser } from "@/components/amazon/AmazonPlatformAdviser";
 import { formatDate } from "@/lib/utils";
 import {
   ArrowLeft,
@@ -229,7 +232,12 @@ export default async function ProductAnalysisPage({
             </CollapsibleAnalysis>
 
             <CollapsibleAnalysis title="STP Analysis" defaultOpen={false}>
-              <STPAnalysis analysis={analyses.stp} />
+              <STPAnalysis
+                analysis={analyses.stp}
+                brandId={product.brandId}
+                productId={product.id}
+                productName={product.name}
+              />
             </CollapsibleAnalysis>
 
             <CollapsibleAnalysis title="SWOT Analysis" defaultOpen={false}>
@@ -241,7 +249,12 @@ export default async function ProductAnalysisPage({
             </CollapsibleAnalysis>
 
             <CollapsibleAnalysis title="Customer Personas" defaultOpen={false}>
-              <CustomerPersonas analysis={analyses.personas} />
+              <CustomerPersonas
+                analysis={analyses.personas}
+                brandId={product.brandId}
+                productId={product.id}
+                productName={product.name}
+              />
             </CollapsibleAnalysis>
 
             {hasCompetitors && (
@@ -274,6 +287,30 @@ export default async function ProductAnalysisPage({
             </CollapsibleAnalysis>
           </div>
         )}
+
+        {/* AI Strategist Chatbots Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <MarketingStrategist
+            brandId={product.brandId}
+            productId={product.id}
+            brandName={product.brand.name}
+            productName={product.name}
+          />
+
+          <ProductImprovementStrategist
+            brandId={product.brandId}
+            productId={product.id}
+            brandName={product.brand.name}
+            productName={product.name}
+          />
+
+          <AmazonPlatformAdviser
+            brandId={product.brandId}
+            productId={product.id}
+            brandName={product.brand.name}
+            productName={product.name}
+          />
+        </div>
       </div>
     </ProductPageWrapper>
   );

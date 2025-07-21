@@ -42,20 +42,23 @@ export async function POST(request: NextRequest) {
     // Get headers from parsed data
     const headers = Object.keys(parseResult.data[0]);
 
-    // Check for review text column
-    const hasReviewColumn = headers.some((header) =>
-      [
-        "review",
-        "text",
-        "comment",
-        "feedback",
-        "content",
-        "message",
-        "review_text",
-        "reviewtext",
-        "customer_review",
-        "review_content",
-      ].includes(header),
+    // Check for review text column (use same logic as csv.ts)
+    const reviewTextCandidates = [
+      "review",
+      "text",
+      "comment",
+      "feedback",
+      "content",
+      "message",
+      "review_text",
+      "reviewtext",
+      "customer_review",
+      "review_content",
+      "body",
+    ];
+
+    const hasReviewColumn = reviewTextCandidates.some((candidate) =>
+      headers.some((header) => header.includes(candidate)),
     );
 
     if (!hasReviewColumn) {

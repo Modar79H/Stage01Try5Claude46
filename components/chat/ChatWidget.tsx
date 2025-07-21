@@ -183,8 +183,8 @@ export default function ChatWidget({
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 bg-primary text-white rounded-full p-4 shadow-lg hover:scale-110 transition-transform z-50"
-        title="Chat with Marketing Strategist"
+        className="fixed bottom-6 right-6 bg-green-600 hover:bg-green-700 text-white rounded-full p-4 shadow-lg hover:scale-110 transition-transform z-50"
+        title="Customer Support Chat"
       >
         <MessageCircle size={24} />
       </button>
@@ -201,14 +201,12 @@ export default function ChatWidget({
     >
       <Card className="h-full flex flex-col shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b bg-primary text-white rounded-t-lg">
+        <div className="flex items-center justify-between p-4 border-b bg-green-600 text-white rounded-t-lg">
           <div className="flex items-center space-x-2">
             <MessageCircle size={20} />
             <div>
-              <h3 className="font-semibold">Marketing Strategist</h3>
-              {productName && (
-                <p className="text-xs opacity-90">{productName}</p>
-              )}
+              <h3 className="font-semibold">Customer Support</h3>
+              <p className="text-xs opacity-90">How can we help you today?</p>
             </div>
           </div>
           <div className="flex items-center space-x-2">

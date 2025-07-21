@@ -11,7 +11,15 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { conversationId, message, brandId, productId, stream = true } = body;
+    const {
+      conversationId,
+      message,
+      brandId,
+      productId,
+      stream = true,
+      chatbotType = "marketing",
+      personaData,
+    } = body;
 
     // Create new conversation if not provided
     let convId = conversationId;
@@ -24,7 +32,12 @@ export async function POST(request: NextRequest) {
     }
 
     // For now, always use non-streaming response
-    const response = await chatbotService.generateResponse(convId, message);
+    const response = await chatbotService.generateResponse(
+      convId,
+      message,
+      chatbotType,
+      personaData,
+    );
 
     return NextResponse.json({
       conversationId: convId,

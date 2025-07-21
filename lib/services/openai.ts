@@ -749,25 +749,30 @@ Conduct a comprehensive Smart Competition Analysis by comparing your product's a
 - Compare ALL product features from your product description with ALL features from each competitor's product description
 - Include attributes that appear in only one competitor or only in your product
 - Calculate Differentiation Scores: 1 = only you have it, 0 = everyone has it, -1 = only competitors have it
-- For "competitor_a", "competitor_b" etc fields, use the actual competitor names from the data
+- Use ONLY the actual competitor names from the provided data - do NOT create fake competitors
+- If only one competitor is provided, only include that one competitor in the analysis
+- Provide detailed explanations for each attribute and why it matters
 
 2. STRENGTHS & WEAKNESSES MATRIX
 - Compare your SWOT analysis with each competitor's Strengths and Weaknesses
 - Derive Opportunities: Where competitors are weak but you are strong
 - Derive Threats: Where competitors are strong but you are weak
 - Identify shared industry challenges and unique advantages
+- Provide detailed explanations for each strength, weakness, opportunity, and threat
 
 3. CUSTOMER SEGMENTATION OVERLAP
 - Compare your STP segments with each competitor's segments
 - Calculate overlap based on similar customer demographics and behaviors
 - Identify segments that no one is targeting effectively
 - Look for positioning opportunities in underserved segments
+- Provide detailed explanations for each segment analysis and strategic implications
 
 4. CUSTOMER JOURNEY FRICTION ANALYSIS
 - Compare journey stages between you and competitors
 - Calculate friction scores based on pain points and issues mentioned
 - Lower score = better experience, Higher score = more friction
 - Identify where each brand excels or struggles
+- Provide detailed explanations for each journey stage and strategic recommendations
 
 CRITICAL: You MUST respond with valid JSON only. No markdown, no explanations outside the JSON structure.
 
@@ -778,89 +783,82 @@ Response format:
       "attribute_comparison": [
         {
           "attribute": "Feature name",
+          "explanation": "Detailed explanation of this attribute and why it matters to customers",
           "you_have": true,
           "competitors": {
-            "Competitor Name 1": true,
-            "Competitor Name 2": false
+            "[Use actual competitor names from data]": true
           },
           "differentiation_score": 0.5,
           "strategic_value": "high|medium|low",
           "customer_importance": "XX%"
         }
       ],
-      "unique_advantages": ["Advantage 1", "Advantage 2"],
-      "feature_gaps": ["Missing feature 1", "Missing feature 2"],
-      "strategic_recommendations": ["Recommendation 1", "Recommendation 2"]
+      "unique_advantages": [{"advantage": "Advantage name", "explanation": "Why this gives you competitive edge"}],
+      "feature_gaps": [{"gap": "Missing feature name", "explanation": "Why this gap matters and impact"}],
+      "strategic_recommendations": [{"recommendation": "Action item", "explanation": "Why this recommendation matters"}]
     },
     "swot_matrix": {
       "strength_comparison": {
-        "your_strengths": ["Strength 1", "Strength 2"],
+        "your_strengths": [{"strength": "Strength name", "explanation": "Why this is a strength"}],
         "competitor_strengths": {
-          "Competitor Name 1": ["Their Strength 1", "Their Strength 2"],
-          "Competitor Name 2": ["Their Strength 1", "Their Strength 2"]
+          "[Use actual competitor names]": [{"strength": "Their strength", "explanation": "Why this is their strength"}]
         },
-        "competitive_advantages": ["Where you win vs them"],
-        "strength_gaps": ["Where they win vs you"]
+        "competitive_advantages": [{"advantage": "Where you win", "explanation": "Why this advantage matters"}],
+        "strength_gaps": [{"gap": "Where they win", "explanation": "Why this gap matters"}]
       },
       "weakness_comparison": {
-        "your_weaknesses": ["Weakness 1", "Weakness 2"],
+        "your_weaknesses": [{"weakness": "Weakness name", "explanation": "Why this is a weakness"}],
         "competitor_weaknesses": {
-          "Competitor Name 1": ["Their Weakness 1", "Their Weakness 2"],
-          "Competitor Name 2": ["Their Weakness 1", "Their Weakness 2"]
+          "[Use actual competitor names]": [{"weakness": "Their weakness", "explanation": "Why this is their weakness"}]
         },
-        "shared_weaknesses": ["Common industry issues"],
-        "relative_advantages": ["Their weaknesses you don't have"]
+        "shared_weaknesses": [{"weakness": "Common issue", "explanation": "Why this affects everyone"}],
+        "relative_advantages": [{"advantage": "Their weakness you avoid", "explanation": "Why this gives you advantage"}]
       },
-      "derived_opportunities": ["Strategic opportunity 1", "Strategic opportunity 2"],
-      "derived_threats": ["Strategic threat 1", "Strategic threat 2"]
+      "derived_opportunities": [{"opportunity": "Strategic opportunity", "explanation": "How to capitalize on this"}],
+      "derived_threats": [{"threat": "Strategic threat", "explanation": "How this could impact you"}]
     },
     "segmentation_analysis": {
-      "your_primary_segments": ["Segment 1 (XX%)", "Segment 2 (XX%)"],
+      "your_primary_segments": [{"segment": "Segment name (XX%)", "explanation": "Why this is your key segment"}],
       "competitor_segments": {
-        "Competitor Name 1": ["Their Segment 1 (XX%)", "Their Segment 2 (XX%)"],
-        "Competitor Name 2": ["Their Segment 1 (XX%)", "Their Segment 2 (XX%)"]
+        "[Use actual competitor names]": [{"segment": "Their segment (XX%)", "explanation": "Why this is their key segment"}]
       },
       "overlap_analysis": {
-        "Competitor Name 1": {"overlap_score": 25, "shared_segments": ["Segment names"]},
-        "Competitor Name 2": {"overlap_score": 40, "shared_segments": ["Segment names"]}
+        "[Use actual competitor names]": {"overlap_score": 25, "shared_segments": ["Segment names"], "explanation": "Analysis of overlap and implications"}
       },
-      "untapped_segments": ["Segment nobody targets"],
-      "positioning_opportunity": "Strategic positioning insight",
-      "segment_recommendations": ["Target this segment", "Defend this position"]
+      "untapped_segments": [{"segment": "Segment nobody targets", "explanation": "Why this segment is opportunity"}],
+      "positioning_opportunity": "Strategic positioning insight with detailed explanation",
+      "segment_recommendations": [{"recommendation": "Target this segment", "explanation": "Why this strategy will work"}]
     },
     "journey_analysis": {
       "awareness": {
         "your_friction_score": 7.2,
         "competitor_scores": {
-          "Competitor Name 1": 3.1,
-          "Competitor Name 2": 4.5
+          "[Use actual competitor names]": 3.1
         },
-        "winner": "Competitor Name 1",
-        "gap_analysis": "What they do better",
-        "improvement_opportunity": "How you can improve"
+        "winner": "[competitor name or 'you']",
+        "gap_analysis": "Detailed explanation of what they do better/worse",
+        "improvement_opportunity": "Specific action items for improvement"
       },
       "purchase": {
         "your_friction_score": 2.1,
         "competitor_scores": {
-          "Competitor Name 1": 5.8,
-          "Competitor Name 2": 4.2
+          "[Use actual competitor names]": 5.8
         },
         "winner": "you",
-        "gap_analysis": "What you do better",
-        "competitive_advantage": "Why this matters"
+        "gap_analysis": "Detailed explanation of what you do better",
+        "competitive_advantage": "Why this advantage matters strategically"
       },
       "post_purchase": {
         "your_friction_score": 1.2,
         "competitor_scores": {
-          "Competitor Name 1": 8.9,
-          "Competitor Name 2": 6.3
+          "[Use actual competitor names]": 8.9
         },
         "winner": "you",
-        "gap_analysis": "What you do better",
-        "competitive_advantage": "Why this matters"
+        "gap_analysis": "Detailed explanation of what you do better",
+        "competitive_advantage": "Why this advantage matters strategically"
       },
-      "strategic_focus": "Primary area needing improvement",
-      "journey_recommendations": ["Tactical recommendation 1", "Tactical recommendation 2"]
+      "strategic_focus": "Primary area needing improvement with detailed explanation",
+      "journey_recommendations": [{"recommendation": "Tactical action", "explanation": "Why this will improve journey"}]
     },
     "executive_summary": {
       "competitive_position": "Overall market position vs competitors",
@@ -889,11 +887,11 @@ Response format:
     if (
       analysisType === "smart_competition" &&
       existingAnalyses &&
-      competitorReviews
+      existingAnalyses.competitorAnalyses
     ) {
       return this.buildSmartCompetitionPrompt(
         existingAnalyses,
-        competitorReviews,
+        competitorReviews || [], // Pass empty array if no competitor reviews
       );
     }
 
@@ -993,7 +991,35 @@ Response format:
       }
     }
 
-    prompt += `\nBased on comparing your comprehensive analysis data with the detailed competitor analyses, perform a Smart Competition Analysis that:
+    // List all competitor names for the AI to use
+    const competitorNames = Object.keys(
+      existingAnalyses.competitorAnalyses || {},
+    );
+    const competitorNamesList = competitorNames.map((id) => {
+      const competitor = existingAnalyses.competitorAnalyses[id];
+      return competitor.name || id;
+    });
+
+    console.log(
+      `🎯 Smart Competition Analysis - Found ${competitorNames.length} competitors:`,
+      competitorNamesList,
+    );
+    console.log(
+      `📊 Competitor analyses keys:`,
+      Object.keys(existingAnalyses.competitorAnalyses || {}),
+    );
+
+    if (competitorNamesList.length === 0) {
+      console.log(
+        `⚠️ WARNING: No competitor names found for Smart Competition Analysis!`,
+      );
+    }
+
+    prompt += `\nIMPORTANT: Use ONLY these competitor names in your response: ${competitorNamesList.join(", ")}
+    DO NOT create fake competitors like "Competitor A" or "Competitor B".
+    If no competitor names are provided, respond with an error message.
+    
+    Based on comparing your comprehensive analysis data with the detailed competitor analyses, perform a Smart Competition Analysis that:
     
 1. For Product Attributes: Compare all attributes found in your product description AND all attributes found in each competitor's product description. Look for features mentioned in competitor reviews that might not be in your product.
 
@@ -1003,7 +1029,7 @@ Response format:
 
 4. For Customer Journey: Compare friction points at each stage of the journey between you and competitors.
 
-Focus on strategic intelligence and actionable insights.`;
+Focus on strategic intelligence and actionable insights with detailed explanations.`;
 
     return prompt;
   }

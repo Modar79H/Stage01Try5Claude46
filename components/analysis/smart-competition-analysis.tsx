@@ -1,6 +1,7 @@
 // components/analysis/smart-competition-analysis.tsx
 "use client";
 
+import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -26,42 +27,74 @@ interface SmartCompetitionAnalysisProps {
         product_attributes: {
           attribute_comparison: Array<{
             attribute: string;
+            explanation: string;
             you_have: boolean;
             competitors: Record<string, boolean>;
             differentiation_score: number;
             strategic_value: string;
             customer_importance: string;
           }>;
-          unique_advantages: string[];
-          feature_gaps: string[];
-          strategic_recommendations: string[];
+          unique_advantages: Array<{ advantage: string; explanation: string }>;
+          feature_gaps: Array<{ gap: string; explanation: string }>;
+          strategic_recommendations: Array<{
+            recommendation: string;
+            explanation: string;
+          }>;
         };
         swot_matrix: {
           strength_comparison: {
-            your_strengths: string[];
-            competitor_strengths: Record<string, string[]>;
-            competitive_advantages: string[];
-            strength_gaps: string[];
+            your_strengths: Array<{ strength: string; explanation: string }>;
+            competitor_strengths: Record<
+              string,
+              Array<{ strength: string; explanation: string }>
+            >;
+            competitive_advantages: Array<{
+              advantage: string;
+              explanation: string;
+            }>;
+            strength_gaps: Array<{ gap: string; explanation: string }>;
           };
           weakness_comparison: {
-            your_weaknesses: string[];
-            competitor_weaknesses: Record<string, string[]>;
-            shared_weaknesses: string[];
-            relative_advantages: string[];
+            your_weaknesses: Array<{ weakness: string; explanation: string }>;
+            competitor_weaknesses: Record<
+              string,
+              Array<{ weakness: string; explanation: string }>
+            >;
+            shared_weaknesses: Array<{ weakness: string; explanation: string }>;
+            relative_advantages: Array<{
+              advantage: string;
+              explanation: string;
+            }>;
           };
-          derived_opportunities: string[];
-          derived_threats: string[];
+          derived_opportunities: Array<{
+            opportunity: string;
+            explanation: string;
+          }>;
+          derived_threats: Array<{ threat: string; explanation: string }>;
         };
         segmentation_analysis: {
-          your_primary_segments: string[];
-          competitor_segments: Record<string, string[]>;
+          your_primary_segments: Array<{
+            segment: string;
+            explanation: string;
+          }>;
+          competitor_segments: Record<
+            string,
+            Array<{ segment: string; explanation: string }>
+          >;
           overlap_analysis: Record<
             string,
-            { overlap_score: number; shared_segments: string[] }
+            {
+              overlap_score: number;
+              shared_segments: string[];
+              explanation: string;
+            }
           >;
-          untapped_segments: string[];
+          untapped_segments: Array<{ segment: string; explanation: string }>;
           positioning_opportunity: string;
-          segment_recommendations: string[];
+          segment_recommendations: Array<{
+            recommendation: string;
+            explanation: string;
+          }>;
         };
         journey_analysis: {
           awareness: {
@@ -89,7 +122,10 @@ interface SmartCompetitionAnalysisProps {
             competitive_advantage?: string;
           };
           strategic_focus: string;
-          journey_recommendations: string[];
+          journey_recommendations: Array<{
+            recommendation: string;
+            explanation: string;
+          }>;
         };
         executive_summary: {
           competitive_position: string;
@@ -107,7 +143,18 @@ interface SmartCompetitionAnalysisProps {
 export function SmartCompetitionAnalysis({
   analysis,
 }: SmartCompetitionAnalysisProps) {
+  // Debug logging to help identify the issue
+  console.log("🔍 SmartCompetitionAnalysis - Full analysis object:", analysis);
+  console.log("🔍 SmartCompetitionAnalysis - Analysis data:", analysis?.data);
+  console.log(
+    "🔍 SmartCompetitionAnalysis - Smart competition data:",
+    analysis?.data?.smart_competition_analysis,
+  );
+
   if (!analysis?.data?.smart_competition_analysis) {
+    console.log(
+      "❌ SmartCompetitionAnalysis - No smart_competition_analysis data found",
+    );
     return (
       <Card>
         <CardContent className="py-8">
@@ -127,6 +174,17 @@ export function SmartCompetitionAnalysis({
   }
 
   const data = analysis.data.smart_competition_analysis;
+
+  // Debug the competitor data specifically
+  console.log("🎯 SmartCompetitionAnalysis - SWOT Matrix:", data.swot_matrix);
+  console.log(
+    "🎯 SmartCompetitionAnalysis - Competitor Strengths:",
+    data.swot_matrix?.strength_comparison?.competitor_strengths,
+  );
+  console.log(
+    "🎯 SmartCompetitionAnalysis - Competitor Weaknesses:",
+    data.swot_matrix?.weakness_comparison?.competitor_weaknesses,
+  );
   const getDifferentiationColor = (score: number) => {
     if (score > 0.5) return "text-green-600 bg-green-50";
     if (score > -0.5) return "text-yellow-600 bg-yellow-50";
@@ -253,48 +311,63 @@ export function SmartCompetitionAnalysis({
               <tbody>
                 {data.product_attributes.attribute_comparison.map(
                   (attr, idx) => (
-                    <tr key={idx} className="border-b">
-                      <td className="py-2 font-medium">{attr.attribute}</td>
-                      <td className="text-center py-2">
-                        {attr.you_have ? (
-                          <CheckCircle className="h-4 w-4 text-green-500 mx-auto" />
-                        ) : (
-                          <XCircle className="h-4 w-4 text-red-500 mx-auto" />
-                        )}
-                      </td>
-                      {Object.entries(attr.competitors).map(
-                        ([competitorName, hasFeature]) => (
-                          <td key={competitorName} className="text-center py-2">
-                            {hasFeature ? (
-                              <CheckCircle className="h-4 w-4 text-green-500 mx-auto" />
-                            ) : (
-                              <XCircle className="h-4 w-4 text-red-500 mx-auto" />
-                            )}
-                          </td>
-                        ),
-                      )}
-                      <td className="text-center py-2">
-                        <Badge
-                          className={getDifferentiationColor(
-                            attr.differentiation_score,
+                    <React.Fragment key={idx}>
+                      <tr className="border-b">
+                        <td className="py-2 font-medium">{attr.attribute}</td>
+                        <td className="text-center py-2">
+                          {attr.you_have ? (
+                            <CheckCircle className="h-4 w-4 text-green-500 mx-auto" />
+                          ) : (
+                            <XCircle className="h-4 w-4 text-red-500 mx-auto" />
                           )}
-                        >
-                          {attr.differentiation_score > 0 ? "+" : ""}
-                          {attr.differentiation_score}
-                        </Badge>
-                      </td>
-                      <td className="text-center py-2">
-                        <Badge
-                          variant={
-                            attr.strategic_value === "high"
-                              ? "default"
-                              : "secondary"
-                          }
-                        >
-                          {attr.customer_importance}
-                        </Badge>
-                      </td>
-                    </tr>
+                        </td>
+                        {Object.entries(attr.competitors).map(
+                          ([competitorName, hasFeature]) => (
+                            <td
+                              key={competitorName}
+                              className="text-center py-2"
+                            >
+                              {hasFeature ? (
+                                <CheckCircle className="h-4 w-4 text-green-500 mx-auto" />
+                              ) : (
+                                <XCircle className="h-4 w-4 text-red-500 mx-auto" />
+                              )}
+                            </td>
+                          ),
+                        )}
+                        <td className="text-center py-2">
+                          <Badge
+                            className={getDifferentiationColor(
+                              attr.differentiation_score,
+                            )}
+                          >
+                            {attr.differentiation_score > 0 ? "+" : ""}
+                            {attr.differentiation_score}
+                          </Badge>
+                        </td>
+                        <td className="text-center py-2">
+                          <Badge
+                            variant={
+                              attr.strategic_value === "high"
+                                ? "default"
+                                : "secondary"
+                            }
+                          >
+                            {attr.customer_importance}
+                          </Badge>
+                        </td>
+                      </tr>
+                      {attr.explanation && (
+                        <tr className="border-b bg-gray-50">
+                          <td
+                            colSpan={Object.keys(attr.competitors).length + 4}
+                            className="py-2 px-4 text-sm text-gray-600 italic"
+                          >
+                            {attr.explanation}
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
                   ),
                 )}
               </tbody>
@@ -309,9 +382,23 @@ export function SmartCompetitionAnalysis({
               <ul className="text-sm space-y-1">
                 {data.product_attributes.unique_advantages.map(
                   (advantage, idx) => (
-                    <li key={idx} className="flex items-start">
-                      <TrendingUp className="h-3 w-3 text-green-500 mr-2 mt-1 flex-shrink-0" />
-                      {advantage}
+                    <li key={idx} className="mb-2">
+                      <div className="flex items-start">
+                        <TrendingUp className="h-3 w-3 text-green-500 mr-2 mt-1 flex-shrink-0" />
+                        <div>
+                          <span className="font-medium">
+                            {typeof advantage === "string"
+                              ? advantage
+                              : advantage?.advantage || "Advantage"}
+                          </span>
+                          {typeof advantage === "object" &&
+                            advantage?.explanation && (
+                              <p className="text-sm text-gray-600 mt-1">
+                                {advantage.explanation}
+                              </p>
+                            )}
+                        </div>
+                      </div>
                     </li>
                   ),
                 )}
@@ -324,9 +411,20 @@ export function SmartCompetitionAnalysis({
               </h4>
               <ul className="text-sm space-y-1">
                 {data.product_attributes.feature_gaps.map((gap, idx) => (
-                  <li key={idx} className="flex items-start">
-                    <TrendingDown className="h-3 w-3 text-red-500 mr-2 mt-1 flex-shrink-0" />
-                    {gap}
+                  <li key={idx} className="mb-2">
+                    <div className="flex items-start">
+                      <TrendingDown className="h-3 w-3 text-red-500 mr-2 mt-1 flex-shrink-0" />
+                      <div>
+                        <span className="font-medium">
+                          {typeof gap === "string" ? gap : gap?.gap || "Gap"}
+                        </span>
+                        {typeof gap === "object" && gap?.explanation && (
+                          <p className="text-sm text-gray-600 mt-1">
+                            {gap.explanation}
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -360,9 +458,19 @@ export function SmartCompetitionAnalysis({
                     (strength, idx) => (
                       <li key={idx} className="flex items-start">
                         <CheckCircle className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                        <span className="text-sm text-gray-700">
-                          {strength}
-                        </span>
+                        <div>
+                          <span className="text-sm text-gray-700 font-medium">
+                            {typeof strength === "string"
+                              ? strength
+                              : strength?.strength || "Strength"}
+                          </span>
+                          {typeof strength === "object" &&
+                            strength?.explanation && (
+                              <p className="text-sm text-gray-600 mt-1">
+                                {strength.explanation}
+                              </p>
+                            )}
+                        </div>
                       </li>
                     ),
                   )}
@@ -383,10 +491,23 @@ export function SmartCompetitionAnalysis({
                       <h6 className="font-medium text-gray-800 mb-1">
                         {competitorName}
                       </h6>
-                      <ul className="space-y-1">
+                      <ul className="space-y-2">
                         {strengths.map((strength, idx) => (
                           <li key={idx} className="text-sm text-gray-600">
-                            • {strength}
+                            <div>
+                              <span className="font-medium">
+                                •{" "}
+                                {typeof strength === "string"
+                                  ? strength
+                                  : strength?.strength || "Strength"}
+                              </span>
+                              {typeof strength === "object" &&
+                                strength?.explanation && (
+                                  <p className="text-sm text-gray-500 mt-1 ml-2">
+                                    {strength.explanation}
+                                  </p>
+                                )}
+                            </div>
                           </li>
                         ))}
                       </ul>
@@ -413,9 +534,19 @@ export function SmartCompetitionAnalysis({
                     (weakness, idx) => (
                       <li key={idx} className="flex items-start">
                         <XCircle className="h-4 w-4 text-red-500 mr-2 mt-0.5 flex-shrink-0" />
-                        <span className="text-sm text-gray-700">
-                          {weakness}
-                        </span>
+                        <div>
+                          <span className="text-sm text-gray-700 font-medium">
+                            {typeof weakness === "string"
+                              ? weakness
+                              : weakness?.weakness || "Weakness"}
+                          </span>
+                          {typeof weakness === "object" &&
+                            weakness?.explanation && (
+                              <p className="text-sm text-gray-600 mt-1">
+                                {weakness.explanation}
+                              </p>
+                            )}
+                        </div>
                       </li>
                     ),
                   )}
@@ -436,10 +567,23 @@ export function SmartCompetitionAnalysis({
                       <h6 className="font-medium text-gray-800 mb-1">
                         {competitorName}
                       </h6>
-                      <ul className="space-y-1">
+                      <ul className="space-y-2">
                         {weaknesses.map((weakness, idx) => (
                           <li key={idx} className="text-sm text-gray-600">
-                            • {weakness}
+                            <div>
+                              <span className="font-medium">
+                                •{" "}
+                                {typeof weakness === "string"
+                                  ? weakness
+                                  : weakness?.weakness || "Weakness"}
+                              </span>
+                              {typeof weakness === "object" &&
+                                weakness?.explanation && (
+                                  <p className="text-sm text-gray-500 mt-1 ml-2">
+                                    {weakness.explanation}
+                                  </p>
+                                )}
+                            </div>
                           </li>
                         ))}
                       </ul>
@@ -462,9 +606,19 @@ export function SmartCompetitionAnalysis({
                   (opportunity, idx) => (
                     <li key={idx} className="flex items-start">
                       <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
-                      <span className="text-sm text-blue-800">
-                        {opportunity}
-                      </span>
+                      <div>
+                        <span className="text-sm text-blue-800 font-medium">
+                          {typeof opportunity === "string"
+                            ? opportunity
+                            : opportunity?.opportunity || "Opportunity"}
+                        </span>
+                        {typeof opportunity === "object" &&
+                          opportunity?.explanation && (
+                            <p className="text-sm text-blue-700 mt-1">
+                              {opportunity.explanation}
+                            </p>
+                          )}
+                      </div>
                     </li>
                   ),
                 )}
@@ -479,7 +633,18 @@ export function SmartCompetitionAnalysis({
                 {data.swot_matrix.derived_threats.map((threat, idx) => (
                   <li key={idx} className="flex items-start">
                     <div className="w-2 h-2 bg-red-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
-                    <span className="text-sm text-red-800">{threat}</span>
+                    <div>
+                      <span className="text-sm text-red-800 font-medium">
+                        {typeof threat === "string"
+                          ? threat
+                          : threat?.threat || "Threat"}
+                      </span>
+                      {typeof threat === "object" && threat?.explanation && (
+                        <p className="text-sm text-red-700 mt-1">
+                          {threat.explanation}
+                        </p>
+                      )}
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -498,9 +663,19 @@ export function SmartCompetitionAnalysis({
                   (advantage, idx) => (
                     <li key={idx} className="flex items-start">
                       <CheckCircle className="h-4 w-4 text-green-600 mr-2 mt-0.5 flex-shrink-0" />
-                      <span className="text-sm text-green-800">
-                        {advantage}
-                      </span>
+                      <div>
+                        <span className="text-sm text-green-800 font-medium">
+                          {typeof advantage === "string"
+                            ? advantage
+                            : advantage?.advantage || "Advantage"}
+                        </span>
+                        {typeof advantage === "object" &&
+                          advantage?.explanation && (
+                            <p className="text-sm text-green-700 mt-1">
+                              {advantage.explanation}
+                            </p>
+                          )}
+                      </div>
                     </li>
                   ),
                 )}
@@ -516,9 +691,19 @@ export function SmartCompetitionAnalysis({
                   (advantage, idx) => (
                     <li key={idx} className="flex items-start">
                       <div className="w-2 h-2 bg-yellow-600 rounded-full mt-2 mr-2 flex-shrink-0"></div>
-                      <span className="text-sm text-yellow-800">
-                        {advantage}
-                      </span>
+                      <div>
+                        <span className="text-sm text-yellow-800 font-medium">
+                          {typeof advantage === "string"
+                            ? advantage
+                            : advantage?.advantage || "Advantage"}
+                        </span>
+                        {typeof advantage === "object" &&
+                          advantage?.explanation && (
+                            <p className="text-sm text-yellow-700 mt-1">
+                              {advantage.explanation}
+                            </p>
+                          )}
+                      </div>
                     </li>
                   ),
                 )}
@@ -537,7 +722,16 @@ export function SmartCompetitionAnalysis({
                   (gap, idx) => (
                     <li key={idx} className="flex items-start">
                       <XCircle className="h-4 w-4 text-orange-500 mr-2 mt-0.5 flex-shrink-0" />
-                      <span className="text-sm text-gray-700">{gap}</span>
+                      <div>
+                        <span className="text-sm text-gray-700 font-medium">
+                          {typeof gap === "string" ? gap : gap?.gap || "Gap"}
+                        </span>
+                        {typeof gap === "object" && gap?.explanation && (
+                          <p className="text-sm text-gray-600 mt-1">
+                            {gap.explanation}
+                          </p>
+                        )}
+                      </div>
                     </li>
                   ),
                 )}
@@ -552,7 +746,19 @@ export function SmartCompetitionAnalysis({
                   (weakness, idx) => (
                     <li key={idx} className="flex items-start">
                       <AlertTriangle className="h-4 w-4 text-gray-500 mr-2 mt-0.5 flex-shrink-0" />
-                      <span className="text-sm text-gray-700">{weakness}</span>
+                      <div>
+                        <span className="text-sm text-gray-700 font-medium">
+                          {typeof weakness === "string"
+                            ? weakness
+                            : weakness?.weakness || "Weakness"}
+                        </span>
+                        {typeof weakness === "object" &&
+                          weakness?.explanation && (
+                            <p className="text-sm text-gray-600 mt-1">
+                              {weakness.explanation}
+                            </p>
+                          )}
+                      </div>
                     </li>
                   ),
                 )}
@@ -668,12 +874,21 @@ export function SmartCompetitionAnalysis({
         <CardContent className="space-y-4">
           <div>
             <h4 className="font-semibold mb-2">Your Primary Segments</h4>
-            <div className="space-y-1 mb-4">
+            <div className="space-y-2 mb-4">
               {data.segmentation_analysis.your_primary_segments.map(
                 (segment, idx) => (
-                  <Badge key={idx} variant="outline" className="mr-2">
-                    {segment}
-                  </Badge>
+                  <div key={idx} className="border rounded p-3 bg-blue-50">
+                    <Badge variant="outline" className="mb-2">
+                      {typeof segment === "string"
+                        ? segment
+                        : segment?.segment || "Segment"}
+                    </Badge>
+                    {typeof segment === "object" && segment?.explanation && (
+                      <p className="text-sm text-gray-600">
+                        {segment.explanation}
+                      </p>
+                    )}
+                  </div>
                 ),
               )}
             </div>
@@ -704,11 +919,21 @@ export function SmartCompetitionAnalysis({
                       </Badge>
                     )}
                   </div>
-                  <div className="space-y-1">
+                  <div className="space-y-2">
                     {segments.map((segment, idx) => (
-                      <span key={idx} className="text-sm mr-2">
-                        {segment}
-                      </span>
+                      <div key={idx} className="border rounded p-2 bg-white">
+                        <Badge variant="outline" className="mb-1">
+                          {typeof segment === "string"
+                            ? segment
+                            : segment?.segment || "Segment"}
+                        </Badge>
+                        {typeof segment === "object" &&
+                          segment?.explanation && (
+                            <p className="text-sm text-gray-600">
+                              {segment.explanation}
+                            </p>
+                          )}
+                      </div>
                     ))}
                   </div>
                   {data.segmentation_analysis.overlap_analysis[competitorName]
@@ -730,11 +955,23 @@ export function SmartCompetitionAnalysis({
               <h4 className="font-semibold text-green-800 mb-2">
                 🎯 Untapped Market Segments
               </h4>
-              <ul className="space-y-1">
+              <ul className="space-y-2">
                 {data.segmentation_analysis.untapped_segments.map(
                   (segment, idx) => (
                     <li key={idx} className="text-sm text-green-700">
-                      {segment}
+                      <div>
+                        <span className="font-medium">
+                          {typeof segment === "string"
+                            ? segment
+                            : segment?.segment || "Segment"}
+                        </span>
+                        {typeof segment === "object" &&
+                          segment?.explanation && (
+                            <p className="text-sm text-green-600 mt-1">
+                              {segment.explanation}
+                            </p>
+                          )}
+                      </div>
                     </li>
                   ),
                 )}
@@ -764,14 +1001,25 @@ export function SmartCompetitionAnalysis({
         <CardContent className="space-y-4">
           <div>
             <h4 className="font-semibold mb-3">Product Strategy</h4>
-            <ul className="space-y-2">
+            <ul className="space-y-3">
               {data.product_attributes.strategic_recommendations.map(
                 (rec, idx) => (
                   <li key={idx} className="flex items-start">
                     <Badge variant="outline" className="mr-2 mt-0.5">
                       {idx + 1}
                     </Badge>
-                    <span className="text-sm text-gray-700">{rec}</span>
+                    <div className="flex-1">
+                      <span className="text-sm text-gray-700 font-medium">
+                        {typeof rec === "string"
+                          ? rec
+                          : rec?.recommendation || "Recommendation"}
+                      </span>
+                      {typeof rec === "object" && rec?.explanation && (
+                        <p className="text-sm text-gray-600 mt-1">
+                          {rec.explanation}
+                        </p>
+                      )}
+                    </div>
                   </li>
                 ),
               )}
@@ -780,14 +1028,25 @@ export function SmartCompetitionAnalysis({
 
           <div className="border-t pt-4">
             <h4 className="font-semibold mb-3">Segmentation Strategy</h4>
-            <ul className="space-y-2">
+            <ul className="space-y-3">
               {data.segmentation_analysis.segment_recommendations.map(
                 (rec, idx) => (
                   <li key={idx} className="flex items-start">
                     <Badge variant="outline" className="mr-2 mt-0.5">
                       {idx + 1}
                     </Badge>
-                    <span className="text-sm text-gray-700">{rec}</span>
+                    <div className="flex-1">
+                      <span className="text-sm text-gray-700 font-medium">
+                        {typeof rec === "string"
+                          ? rec
+                          : rec?.recommendation || "Recommendation"}
+                      </span>
+                      {typeof rec === "object" && rec?.explanation && (
+                        <p className="text-sm text-gray-600 mt-1">
+                          {rec.explanation}
+                        </p>
+                      )}
+                    </div>
                   </li>
                 ),
               )}
@@ -804,13 +1063,24 @@ export function SmartCompetitionAnalysis({
                 {data.journey_analysis.strategic_focus}
               </p>
             </div>
-            <ul className="space-y-2">
+            <ul className="space-y-3">
               {data.journey_analysis.journey_recommendations.map((rec, idx) => (
                 <li key={idx} className="flex items-start">
                   <Badge variant="outline" className="mr-2 mt-0.5">
                     {idx + 1}
                   </Badge>
-                  <span className="text-sm text-gray-700">{rec}</span>
+                  <div className="flex-1">
+                    <span className="text-sm text-gray-700 font-medium">
+                      {typeof rec === "string"
+                        ? rec
+                        : rec?.recommendation || "Recommendation"}
+                    </span>
+                    {typeof rec === "object" && rec?.explanation && (
+                      <p className="text-sm text-gray-600 mt-1">
+                        {rec.explanation}
+                      </p>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>

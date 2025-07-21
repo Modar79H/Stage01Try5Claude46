@@ -115,6 +115,7 @@ class CSVProcessingService {
       "reviewtext",
       "customer_review",
       "review_content",
+      "body",
     ];
 
     let reviewText = null;
