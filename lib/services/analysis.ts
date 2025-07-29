@@ -117,37 +117,32 @@ class AnalysisProcessingService {
             analysesToRun.length,
           );
 
-          // UPDATED: Get reviews with product-specific context
-          const reviews = await pineconeService.getReviewsForAnalysis(
-            productId,
-            analysisType,
-            userId,
-            product.brand.id,
-            this.getOptimalReviewCount(analysisType),
-            false,
-            undefined,
-            product.name,
-          );
+          // Get reviews with product-specific context
+          let reviews = [];
 
-          if (reviews.length === 0) {
-            errors.push(`No reviews found for ${analysisType} analysis`);
-            continue;
+          // For smart competition analysis, we don't need main product reviews
+          // The analysis will be based entirely on competitor data
+          if (analysisType !== "smart_competition") {
+            reviews = await pineconeService.getReviewsForAnalysis(
+              productId,
+              analysisType,
+              userId,
+              product.brand.id,
+              this.getOptimalReviewCount(analysisType, product.reviewsCount),
+              false,
+              undefined,
+              product.name,
+            );
+
+            if (reviews.length === 0) {
+              errors.push(`No reviews found for ${analysisType} analysis`);
+              continue;
+            }
           }
 
           // Get competitor reviews if needed
           let competitorReviews = undefined;
           let existingAnalyses = undefined;
-
-          if (analysisType === "competition" && hasCompetitors) {
-            const competitorIds = product.competitors.map((c) => c.id);
-            competitorReviews = await pineconeService.getCompetitorReviews(
-              productId,
-              competitorIds,
-              userId,
-              product.brand.id,
-              50,
-            );
-          }
 
           // Special handling for smart competition analysis
           if (analysisType === "smart_competition") {
@@ -223,22 +218,17 @@ class AnalysisProcessingService {
 
             completedAnalyses.push(analysisType);
 
-            // Generate persona images if this is personas analysis
-            if (analysisType === "personas" && result.data.customer_personas) {
-              await this.generatePersonaImages(
-                productId,
-                result.data.customer_personas,
-              );
-            }
-
             // Generate persona images for STP analysis
             if (analysisType === "stp" && result.data.stp_analysis) {
               const stpPersonas = result.data.stp_analysis.segmentation
                 ?.filter((segment: any) => segment.buyer_persona)
                 .map((segment: any) => segment.buyer_persona);
-              
+
               if (stpPersonas && stpPersonas.length > 0) {
-                await this.generateSTPPersonaImages(productId, result.data.stp_analysis);
+                await this.generateSTPPersonaImages(
+                  productId,
+                  result.data.stp_analysis,
+                );
               }
             }
           } else {
@@ -275,7 +265,7 @@ class AnalysisProcessingService {
               i + 1,
               analysesToRun.length,
             );
-            await sleep(15000); // 15 second delay
+            await sleep(30000); // 30 second delay
           }
         } catch (error) {
           const errorMessage =
@@ -363,7 +353,7 @@ class AnalysisProcessingService {
         analysisType,
         userId,
         product.brand.id,
-        this.getOptimalReviewCount(analysisType),
+        this.getOptimalReviewCount(analysisType, product.reviewsCount),
         false,
         undefined,
         product.name,
@@ -375,16 +365,6 @@ class AnalysisProcessingService {
 
       // Get competitor reviews if needed
       let competitorReviews = undefined;
-      if (analysisType === "competition" && product.competitors.length > 0) {
-        const competitorIds = product.competitors.map((c) => c.id);
-        competitorReviews = await pineconeService.getCompetitorReviews(
-          productId,
-          competitorIds,
-          userId,
-          product.brand.id,
-          50,
-        );
-      }
 
       // Perform the analysis
       const result = await openaiService.performAnalysis(
@@ -416,22 +396,17 @@ class AnalysisProcessingService {
           },
         });
 
-        // Generate persona images if this is personas analysis
-        if (analysisType === "personas" && result.data.customer_personas) {
-          await this.generatePersonaImages(
-            productId,
-            result.data.customer_personas,
-          );
-        }
-
         // Generate persona images for STP analysis when reprocessing
         if (analysisType === "stp" && result.data.stp_analysis) {
           const stpPersonas = result.data.stp_analysis.segmentation
             ?.filter((segment: any) => segment.buyer_persona)
             .map((segment: any) => segment.buyer_persona);
-          
+
           if (stpPersonas && stpPersonas.length > 0) {
-            await this.generateSTPPersonaImages(productId, result.data.stp_analysis);
+            await this.generateSTPPersonaImages(
+              productId,
+              result.data.stp_analysis,
+            );
           }
         }
 
@@ -476,86 +451,23 @@ class AnalysisProcessingService {
     }
   }
 
-  private async generatePersonaImages(
-    productId: string,
-    personas: any[],
-  ): Promise<void> {
-    try {
-      for (let i = 0; i < personas.length; i++) {
-        const persona = personas[i];
-        if (persona.demographics && persona.persona_intro) {
-          const description = `${persona.persona_intro} - ${persona.demographics.age} ${persona.demographics.job_title}`;
-          const imageUrl =
-            await openaiService.generatePersonaImage(description);
-
-          if (imageUrl) {
-            try {
-              // Download the image
-              const response = await fetch(imageUrl);
-              if (!response.ok) throw new Error("Failed to download image");
-
-              const buffer = await response.arrayBuffer();
-
-              // Generate unique filename
-              const timestamp = Date.now();
-              const filename = `persona_${productId}_${i}_${timestamp}.png`;
-              const localPath = `/images/personas/${filename}`;
-              const fullPath = path.join(
-                process.cwd(),
-                "public",
-                "images",
-                "personas",
-                filename,
-              );
-
-              // Save the image locally
-              await fs.writeFile(fullPath, Buffer.from(buffer));
-
-              // Store local path instead of OpenAI URL
-              persona.image_url = localPath;
-              console.log(`✅ Saved persona image locally: ${localPath}`);
-            } catch (downloadError) {
-              console.error(
-                "Error downloading/saving persona image:",
-                downloadError,
-              );
-              // Fall back to OpenAI URL if download fails
-              persona.image_url = imageUrl;
-            }
-          }
-        }
-      }
-
-      // Update the personas analysis with local image paths
-      await prisma.analysis.update({
-        where: {
-          productId_type: {
-            productId,
-            type: "personas",
-          },
-        },
-        data: {
-          data: { customer_personas: personas },
-        },
-      });
-    } catch (error) {
-      console.error("Error generating persona images:", error);
-      // Don't throw - images are nice to have but not critical
-    }
-  }
-
   private async generateSTPPersonaImages(
     productId: string,
     stpAnalysis: any,
   ): Promise<void> {
     try {
       let updateNeeded = false;
-      
+
       for (const segment of stpAnalysis.segmentation) {
-        if (segment.buyer_persona && segment.buyer_persona.demographics && segment.buyer_persona.persona_intro) {
+        if (
+          segment.buyer_persona &&
+          segment.buyer_persona.demographics &&
+          segment.buyer_persona.persona_intro
+        ) {
           const persona = segment.buyer_persona;
           const description = `${persona.persona_intro} - ${persona.demographics.age} ${persona.demographics.job_title}`;
-          const imageUrl = await openaiService.generatePersonaImage(description);
+          const imageUrl =
+            await openaiService.generatePersonaImage(description);
 
           if (imageUrl) {
             try {
@@ -618,8 +530,12 @@ class AnalysisProcessingService {
     }
   }
 
-  private getOptimalReviewCount(analysisType: AnalysisType): number {
-    const reviewCounts = {
+  private getOptimalReviewCount(
+    analysisType: AnalysisType,
+    totalReviews: number,
+  ): number {
+    // Base review counts (minimum for each analysis type)
+    const baseReviewCounts = {
       product_description: 50,
       sentiment: 100,
       voice_of_customer: 200,
@@ -628,14 +544,46 @@ class AnalysisProcessingService {
       stp: 150,
       swot: 100,
       customer_journey: 120,
-      personas: 150,
-      competition: 100,
-      smart_competition: 200, // Needs more reviews for comprehensive comparison
+      smart_competition: 200,
       strategic_recommendations: 100,
       rating_analysis: 150,
     };
 
-    return reviewCounts[analysisType] || 100;
+    const baseCount = baseReviewCounts[analysisType] || 100;
+
+    // Dynamic scaling based on total reviews
+    let scaledCount: number;
+
+    if (totalReviews <= 500) {
+      // For small datasets, use base count or total reviews, whichever is smaller
+      scaledCount = Math.min(baseCount, totalReviews);
+    } else if (totalReviews <= 2000) {
+      // For medium datasets, use 20-30% of total reviews
+      scaledCount = Math.max(baseCount, Math.floor(totalReviews * 0.25));
+    } else if (totalReviews <= 10000) {
+      // For large datasets, use 10-15% of total reviews
+      scaledCount = Math.max(baseCount, Math.floor(totalReviews * 0.12));
+    } else {
+      // For very large datasets, use 5-10% with a cap
+      scaledCount = Math.max(
+        baseCount,
+        Math.min(
+          Math.floor(totalReviews * 0.08),
+          2000, // Cap at 2000 to control costs
+        ),
+      );
+    }
+
+    // Special handling for certain analysis types that benefit from more data
+    if (
+      analysisType === "voice_of_customer" ||
+      analysisType === "smart_competition"
+    ) {
+      // These analyses benefit from larger sample sizes
+      scaledCount = Math.min(scaledCount * 1.5, 3000);
+    }
+
+    return Math.floor(scaledCount);
   }
 
   // Get existing analyses needed for smart competition comparison
@@ -683,14 +631,30 @@ class AnalysisProcessingService {
   ): Promise<Record<string, any>> {
     const competitorAnalyses: Record<string, any> = {};
 
-    console.log(`🔍 Starting competitor analyses for ${product.competitors.length} competitors`);
+    console.log(
+      `🔍 Starting competitor analyses for ${product.competitors.length} competitors`,
+    );
 
     for (const competitor of product.competitors) {
       const competitorId = competitor.id;
       const competitorName = competitor.name;
       competitorAnalyses[competitorId] = {};
 
-      console.log(`📊 Analyzing competitor: ${competitorName} (ID: ${competitorId})`);
+      console.log(
+        `📊 Analyzing competitor: ${competitorName} (ID: ${competitorId})`,
+      );
+
+      // Get competitor's review count for dynamic scaling
+      const competitorReviewCount = await prisma.review.count({
+        where: {
+          productId: product.id,
+          competitorId: competitorId,
+        },
+      });
+
+      console.log(
+        `📈 Competitor ${competitorName} has ${competitorReviewCount} reviews`,
+      );
 
       // Run Product Description analysis for competitor
       try {
@@ -699,14 +663,19 @@ class AnalysisProcessingService {
           "product_description",
           userId,
           brandId,
-          50,
+          this.getOptimalReviewCount(
+            "product_description",
+            competitorReviewCount,
+          ),
           false,
           undefined,
           competitorName,
           competitorId,
         );
 
-        console.log(`✅ Found ${productDescReviews.length} product description reviews for ${competitorName}`);
+        console.log(
+          `✅ Found ${productDescReviews.length} product description reviews for ${competitorName}`,
+        );
 
         if (productDescReviews.length > 0) {
           const productDescResult = await openaiService.performAnalysis(
@@ -716,15 +685,24 @@ class AnalysisProcessingService {
           if (productDescResult.status === "completed") {
             competitorAnalyses[competitorId].product_description =
               productDescResult.data;
-            console.log(`✅ Product description analysis completed for ${competitorName}`);
+            console.log(
+              `✅ Product description analysis completed for ${competitorName}`,
+            );
           } else {
-            console.log(`❌ Product description analysis failed for ${competitorName}: ${productDescResult.error}`);
+            console.log(
+              `❌ Product description analysis failed for ${competitorName}: ${productDescResult.error}`,
+            );
           }
         } else {
-          console.log(`⚠️ No product description reviews found for ${competitorName}`);
+          console.log(
+            `⚠️ No product description reviews found for ${competitorName}`,
+          );
         }
       } catch (error) {
-        console.error(`❌ Error in product description analysis for ${competitorName}:`, error);
+        console.error(
+          `❌ Error in product description analysis for ${competitorName}:`,
+          error,
+        );
       }
 
       // Run SWOT analysis (Strengths/Weaknesses only) for competitor
@@ -734,30 +712,36 @@ class AnalysisProcessingService {
           "swot",
           userId,
           brandId,
-          100,
+          this.getOptimalReviewCount("swot", competitorReviewCount),
           false,
           undefined,
           competitorName,
           competitorId,
         );
 
-        console.log(`✅ Found ${swotReviews.length} SWOT reviews for ${competitorName}`);
+        console.log(
+          `✅ Found ${swotReviews.length} SWOT reviews for ${competitorName}`,
+        );
 
         if (swotReviews.length > 0) {
-          const swotResult = await openaiService.performCompetitorSWOTAnalysis(
-            swotReviews,
-          );
+          const swotResult =
+            await openaiService.performCompetitorSWOTAnalysis(swotReviews);
           if (swotResult.status === "completed") {
             competitorAnalyses[competitorId].swot = swotResult.data;
             console.log(`✅ SWOT analysis completed for ${competitorName}`);
           } else {
-            console.log(`❌ SWOT analysis failed for ${competitorName}: ${swotResult.error}`);
+            console.log(
+              `❌ SWOT analysis failed for ${competitorName}: ${swotResult.error}`,
+            );
           }
         } else {
           console.log(`⚠️ No SWOT reviews found for ${competitorName}`);
         }
       } catch (error) {
-        console.error(`❌ Error in SWOT analysis for ${competitorName}:`, error);
+        console.error(
+          `❌ Error in SWOT analysis for ${competitorName}:`,
+          error,
+        );
       }
 
       // Run Segmentation analysis for competitor
@@ -766,7 +750,7 @@ class AnalysisProcessingService {
         "stp",
         userId,
         brandId,
-        150,
+        this.getOptimalReviewCount("stp", competitorReviewCount),
         false,
         undefined,
         competitor.name,
@@ -789,7 +773,7 @@ class AnalysisProcessingService {
         "customer_journey",
         userId,
         brandId,
-        120,
+        this.getOptimalReviewCount("customer_journey", competitorReviewCount),
         false,
         undefined,
         competitor.name,
@@ -810,11 +794,17 @@ class AnalysisProcessingService {
       // Add competitor metadata
       competitorAnalyses[competitorId].name = competitorName;
       competitorAnalyses[competitorId].id = competitorId;
-      
-      console.log(`🎯 Completed analyses for ${competitorName}:`, Object.keys(competitorAnalyses[competitorId]));
+
+      console.log(
+        `🎯 Completed analyses for ${competitorName}:`,
+        Object.keys(competitorAnalyses[competitorId]),
+      );
     }
 
-    console.log(`🏁 Competitor analyses summary:`, Object.keys(competitorAnalyses));
+    console.log(
+      `🏁 Competitor analyses summary:`,
+      Object.keys(competitorAnalyses),
+    );
     return competitorAnalyses;
   }
 

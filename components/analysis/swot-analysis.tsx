@@ -113,10 +113,12 @@ const getSWOTInfo = (type: string) => {
 export function SWOTAnalysis({ analysis }: SWOTAnalysisProps) {
   if (!analysis || analysis.status !== "completed") {
     return (
-      <Card>
+      <Card variant="glass" hover>
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <Shield className="h-5 w-5 mr-2" />
+          <CardTitle className="flex items-center text-gray-900 dark:text-white">
+            <div className="p-2 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 mr-3">
+              <Shield className="h-5 w-5 text-white" />
+            </div>
             SWOT Analysis
           </CardTitle>
           <CardDescription>
@@ -125,7 +127,7 @@ export function SWOTAnalysis({ analysis }: SWOTAnalysisProps) {
         </CardHeader>
         <CardContent>
           {analysis?.status === "failed" ? (
-            <div className="flex items-center space-x-2 text-red-600 bg-red-50 p-4 rounded-md">
+            <div className="flex items-center space-x-2 text-red-600 bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200 dark:border-red-800">
               <AlertCircle className="h-4 w-4" />
               <span className="text-sm">
                 Analysis failed: {analysis.error || "Unknown error"}
@@ -134,8 +136,10 @@ export function SWOTAnalysis({ analysis }: SWOTAnalysisProps) {
           ) : (
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                <p className="text-gray-600">Analysis in progress...</p>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gradient-primary mx-auto mb-4"></div>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Analysis in progress...
+                </p>
               </div>
             </div>
           )}
@@ -148,15 +152,19 @@ export function SWOTAnalysis({ analysis }: SWOTAnalysisProps) {
 
   if (!data) {
     return (
-      <Card>
+      <Card variant="glass" hover>
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <Shield className="h-5 w-5 mr-2" />
+          <CardTitle className="flex items-center text-gray-900 dark:text-white">
+            <div className="p-2 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 mr-3">
+              <Shield className="h-5 w-5 text-white" />
+            </div>
             SWOT Analysis
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-gray-600">No SWOT analysis data available.</p>
+          <p className="text-gray-600 dark:text-gray-400">
+            No SWOT analysis data available.
+          </p>
         </CardContent>
       </Card>
     );
@@ -171,44 +179,13 @@ export function SWOTAnalysis({ analysis }: SWOTAnalysisProps) {
 
   return (
     <div className="space-y-6">
-      {/* SWOT Framework Overview */}
-      <Card className="bg-gray-50 border-gray-200">
-        <CardHeader>
-          <CardTitle className="text-gray-900">
-            SWOT Analysis Framework
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="text-gray-800">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="text-center p-4 bg-green-100 rounded-lg">
-              <TrendingUp className="h-8 w-8 text-green-600 mx-auto mb-2" />
-              <h3 className="font-semibold text-green-800">Strengths</h3>
-              <p className="text-sm text-green-700">Internal Positive</p>
-            </div>
-            <div className="text-center p-4 bg-red-100 rounded-lg">
-              <TrendingDown className="h-8 w-8 text-red-600 mx-auto mb-2" />
-              <h3 className="font-semibold text-red-800">Weaknesses</h3>
-              <p className="text-sm text-red-700">Internal Negative</p>
-            </div>
-            <div className="text-center p-4 bg-blue-100 rounded-lg">
-              <Lightbulb className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-              <h3 className="font-semibold text-blue-800">Opportunities</h3>
-              <p className="text-sm text-blue-700">External Positive</p>
-            </div>
-            <div className="text-center p-4 bg-orange-100 rounded-lg">
-              <AlertTriangle className="h-8 w-8 text-orange-600 mx-auto mb-2" />
-              <h3 className="font-semibold text-orange-800">Threats</h3>
-              <p className="text-sm text-orange-700">External Negative</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Charts Overview */}
-      <Card>
+      <Card variant="glass" hover>
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <Shield className="h-5 w-5 mr-2" />
+          <CardTitle className="flex items-center text-gray-900 dark:text-white">
+            <div className="p-2 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 mr-3">
+              <Shield className="h-5 w-5 text-white" />
+            </div>
             SWOT Distribution
           </CardTitle>
           <CardDescription>
@@ -228,13 +205,15 @@ export function SWOTAnalysis({ analysis }: SWOTAnalysisProps) {
           const categoryInfo = getSWOTInfo(category.key);
 
           return (
-            <Card key={category.key}>
+            <Card key={category.key} variant="glass" hover>
               <CardHeader>
-                <CardTitle
-                  className={`flex items-center ${categoryInfo.color}`}
-                >
-                  {categoryInfo.icon}
-                  <span className="ml-2">{categoryInfo.title}</span>
+                <CardTitle className="flex items-center text-gray-900 dark:text-white">
+                  <div
+                    className={`p-2 rounded-lg bg-gradient-to-r ${category.key === "strengths" ? "from-green-500 to-emerald-500" : category.key === "weaknesses" ? "from-red-500 to-pink-500" : category.key === "opportunities" ? "from-blue-500 to-indigo-500" : "from-orange-500 to-red-500"} mr-3`}
+                  >
+                    <div className="text-white">{categoryInfo.icon}</div>
+                  </div>
+                  <span>{categoryInfo.title}</span>
                 </CardTitle>
                 <CardDescription>{categoryInfo.description}</CardDescription>
               </CardHeader>
@@ -243,28 +222,35 @@ export function SWOTAnalysis({ analysis }: SWOTAnalysisProps) {
                   {category.data.map((item, index) => (
                     <div
                       key={index}
-                      className={`border-l-4 ${categoryInfo.borderColor} pl-4`}
+                      className="border-l-4 border-gradient-primary pl-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-r-lg p-4 hover:bg-gray-100/50 dark:hover:bg-gray-700/50 transition-colors"
                     >
                       <div className="flex items-start justify-between mb-2">
-                        <h4 className="font-semibold">{item.topic}</h4>
-                        <Badge className={categoryInfo.badgeColor}>
+                        <h4 className="font-semibold text-gray-900 dark:text-white">
+                          {item.topic}
+                        </h4>
+                        <Badge
+                          variant={
+                            category.key === "strengths"
+                              ? "success"
+                              : category.key === "weaknesses"
+                                ? "destructive"
+                                : category.key === "opportunities"
+                                  ? "info"
+                                  : "warning"
+                          }
+                          size="sm"
+                        >
                           {item.percentage}
                         </Badge>
                       </div>
-                      <p className="text-gray-700 text-sm mb-3">
+                      <p className="text-gray-700 dark:text-gray-300 text-sm mb-3">
                         {item.summary}
                       </p>
                       {item.example_quote && (
-                        <div
-                          className={`${categoryInfo.bgColor} border ${categoryInfo.borderColor} rounded-lg p-3`}
-                        >
+                        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-lg p-3">
                           <div className="flex items-start space-x-2">
-                            <Quote
-                              className={`h-4 w-4 mt-0.5 flex-shrink-0 ${categoryInfo.color}`}
-                            />
-                            <p
-                              className={`italic text-sm ${categoryInfo.color}`}
-                            >
+                            <Quote className="h-4 w-4 mt-0.5 flex-shrink-0 text-blue-600 dark:text-blue-400" />
+                            <p className="italic text-sm text-gray-700 dark:text-gray-300">
                               "{item.example_quote}"
                             </p>
                           </div>
@@ -280,40 +266,105 @@ export function SWOTAnalysis({ analysis }: SWOTAnalysisProps) {
       </div>
 
       {/* Strategic Implications */}
-      <Card className="bg-purple-50 border-purple-200">
+      <Card
+        variant="gradient"
+        className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border-indigo-200 dark:border-indigo-800"
+      >
         <CardHeader>
-          <CardTitle className="text-purple-900">
+          <CardTitle className="text-indigo-900 dark:text-indigo-100 flex items-center">
+            <div className="p-2 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 mr-3">
+              <Lightbulb className="h-5 w-5 text-white" />
+            </div>
             Strategic Implications
           </CardTitle>
         </CardHeader>
-        <CardContent className="text-purple-800">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-white p-4 rounded-lg">
-              <h4 className="font-semibold mb-2">Leverage Strengths</h4>
-              <p className="text-sm">
-                Use your strengths to capitalize on opportunities and defend
-                against threats.
-              </p>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-white/20 dark:border-gray-700/20 hover:shadow-md transition-shadow">
+              <div className="flex items-center mb-3">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center mr-3">
+                  <TrendingUp className="h-5 w-5 text-white" />
+                </div>
+                <h4 className="font-semibold text-indigo-900 dark:text-indigo-100">
+                  Leverage Strengths
+                </h4>
+              </div>
+              <ul className="text-sm space-y-2">
+                {data.strengths &&
+                  data.strengths.slice(0, 2).map((strength, idx) => (
+                    <li key={idx} className="flex items-start">
+                      <div className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                      <span className="text-indigo-800 dark:text-indigo-200">
+                        Use {strength.topic.toLowerCase()} to expand market
+                        share
+                      </span>
+                    </li>
+                  ))}
+              </ul>
             </div>
-            <div className="bg-white p-4 rounded-lg">
-              <h4 className="font-semibold mb-2">Address Weaknesses</h4>
-              <p className="text-sm">
-                Improve weaknesses to better compete and reduce vulnerability to
-                threats.
-              </p>
+            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-white/20 dark:border-gray-700/20 hover:shadow-md transition-shadow">
+              <div className="flex items-center mb-3">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-red-500 to-pink-500 flex items-center justify-center mr-3">
+                  <TrendingDown className="h-5 w-5 text-white" />
+                </div>
+                <h4 className="font-semibold text-indigo-900 dark:text-indigo-100">
+                  Address Weaknesses
+                </h4>
+              </div>
+              <ul className="text-sm space-y-2">
+                {data.weaknesses &&
+                  data.weaknesses.slice(0, 2).map((weakness, idx) => (
+                    <li key={idx} className="flex items-start">
+                      <div className="w-2 h-2 bg-red-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                      <span className="text-indigo-800 dark:text-indigo-200">
+                        Improve {weakness.topic.toLowerCase()} to enhance
+                        competitiveness
+                      </span>
+                    </li>
+                  ))}
+              </ul>
             </div>
-            <div className="bg-white p-4 rounded-lg">
-              <h4 className="font-semibold mb-2">Pursue Opportunities</h4>
-              <p className="text-sm">
-                Develop strategies to take advantage of external opportunities.
-              </p>
+            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-white/20 dark:border-gray-700/20 hover:shadow-md transition-shadow">
+              <div className="flex items-center mb-3">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center mr-3">
+                  <Lightbulb className="h-5 w-5 text-white" />
+                </div>
+                <h4 className="font-semibold text-indigo-900 dark:text-indigo-100">
+                  Pursue Opportunities
+                </h4>
+              </div>
+              <ul className="text-sm space-y-2">
+                {data.opportunities &&
+                  data.opportunities.slice(0, 2).map((opportunity, idx) => (
+                    <li key={idx} className="flex items-start">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                      <span className="text-indigo-800 dark:text-indigo-200">
+                        Capitalize on {opportunity.topic.toLowerCase()}
+                      </span>
+                    </li>
+                  ))}
+              </ul>
             </div>
-            <div className="bg-white p-4 rounded-lg">
-              <h4 className="font-semibold mb-2">Mitigate Threats</h4>
-              <p className="text-sm">
-                Create defensive strategies to minimize the impact of external
-                threats.
-              </p>
+            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-white/20 dark:border-gray-700/20 hover:shadow-md transition-shadow">
+              <div className="flex items-center mb-3">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-orange-500 to-red-500 flex items-center justify-center mr-3">
+                  <AlertTriangle className="h-5 w-5 text-white" />
+                </div>
+                <h4 className="font-semibold text-indigo-900 dark:text-indigo-100">
+                  Mitigate Threats
+                </h4>
+              </div>
+              <ul className="text-sm space-y-2">
+                {data.threats &&
+                  data.threats.slice(0, 2).map((threat, idx) => (
+                    <li key={idx} className="flex items-start">
+                      <div className="w-2 h-2 bg-orange-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                      <span className="text-indigo-800 dark:text-indigo-200">
+                        Defend against {threat.topic.toLowerCase()}
+                      </span>
+                    </li>
+                  ))}
+              </ul>
             </div>
           </div>
         </CardContent>

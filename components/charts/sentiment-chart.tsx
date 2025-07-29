@@ -61,8 +61,8 @@ export function SentimentChart({ likes, dislikes }: SentimentChartProps) {
         data: topThemes.map((item) =>
           item.type === "positive" ? item.percentage : 0,
         ),
-        backgroundColor: "rgba(16, 72, 98, 0.8)",
-        borderColor: "rgba(16, 72, 98, 1)",
+        backgroundColor: "rgba(16, 185, 129, 0.8)",
+        borderColor: "rgba(16, 185, 129, 1)",
         borderWidth: 1,
       },
       {
@@ -70,8 +70,8 @@ export function SentimentChart({ likes, dislikes }: SentimentChartProps) {
         data: topThemes.map((item) =>
           item.type === "negative" ? -item.percentage : 0,
         ),
-        backgroundColor: "rgba(233, 113, 50, 0.8)",
-        borderColor: "rgba(233, 113, 50, 1)",
+        backgroundColor: "rgba(239, 68, 68, 0.8)",
+        borderColor: "rgba(239, 68, 68, 1)",
         borderWidth: 1,
       },
     ],
@@ -122,8 +122,8 @@ export function SentimentChart({ likes, dislikes }: SentimentChartProps) {
 
   if (topThemes.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64 bg-gray-50 rounded-lg">
-        <p className="text-gray-600">
+      <div className="flex items-center justify-center h-64 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+        <p className="text-gray-600 dark:text-gray-400">
           No sentiment data available for visualization
         </p>
       </div>
@@ -131,7 +131,10 @@ export function SentimentChart({ likes, dislikes }: SentimentChartProps) {
   }
 
   return (
-    <div style={{ height: "400px" }}>
+    <div
+      className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm"
+      style={{ height: "450px" }}
+    >
       <Bar ref={chartRef} data={data} options={options} />
     </div>
   );

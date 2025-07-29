@@ -42,7 +42,10 @@ export async function POST(request: NextRequest) {
     // Get headers from parsed data
     const headers = Object.keys(parseResult.data[0]);
 
-    // Check for review text column (use same logic as csv.ts)
+    // Check for all required columns
+    const missingColumns: string[] = [];
+
+    // Check for review text column
     const reviewTextCandidates = [
       "review",
       "text",
@@ -62,10 +65,55 @@ export async function POST(request: NextRequest) {
     );
 
     if (!hasReviewColumn) {
+      missingColumns.push("review text (e.g., 'review', 'text', 'comment')");
+    }
+
+    // Check for rating column
+    const ratingCandidates = [
+      "rating",
+      "score",
+      "stars",
+      "star",
+      "rate",
+      "star_rating",
+      "customer_rating",
+      "product_rating",
+    ];
+
+    const hasRatingColumn = ratingCandidates.some((candidate) =>
+      headers.some((header) => header.includes(candidate)),
+    );
+
+    if (!hasRatingColumn) {
+      missingColumns.push("rating (e.g., 'rating', 'stars', 'score')");
+    }
+
+    // Check for date column
+    const dateCandidates = [
+      "date",
+      "time",
+      "created",
+      "posted",
+      "timestamp",
+      "review_date",
+      "created_at",
+      "posted_at",
+      "date_posted",
+    ];
+
+    const hasDateColumn = dateCandidates.some((candidate) =>
+      headers.some((header) => header.includes(candidate)),
+    );
+
+    if (!hasDateColumn) {
+      missingColumns.push("date (e.g., 'date', 'created', 'posted')");
+    }
+
+    if (missingColumns.length > 0) {
       return NextResponse.json({
         isValid: false,
         errors: [
-          "CSV must contain a column with review text (e.g., 'review', 'text', 'comment')",
+          `Missing required columns: ${missingColumns.join(", ")}. Your CSV must contain review text, rating, and date columns.`,
         ],
         preview: [],
       });

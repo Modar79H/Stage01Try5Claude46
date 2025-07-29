@@ -12,8 +12,6 @@ import { JTBDAnalysis } from "@/components/analysis/jtbd-analysis";
 import { STPAnalysis } from "@/components/analysis/stp-analysis";
 import { SWOTAnalysis } from "@/components/analysis/swot-analysis";
 import { CustomerJourney } from "@/components/analysis/customer-journey";
-import { CustomerPersonas } from "@/components/analysis/customer-personas";
-import { CompetitionAnalysis } from "@/components/analysis/competition-analysis";
 import { StrategicRecommendations } from "@/components/analysis/strategic-recommendations";
 
 interface Product {
@@ -96,10 +94,6 @@ export default function PrintPage() {
         return <SWOTAnalysis key={analysis.id} {...props} />;
       case "customer_journey":
         return <CustomerJourney key={analysis.id} {...props} />;
-      case "personas":
-        return <CustomerPersonas key={analysis.id} {...props} />;
-      case "competition":
-        return <CompetitionAnalysis key={analysis.id} {...props} />;
       case "strategic_recommendations":
         return <StrategicRecommendations key={analysis.id} {...props} />;
       default:
@@ -242,8 +236,6 @@ export default function PrintPage() {
               stp: "STP Analysis",
               swot: "SWOT Analysis",
               customer_journey: "Customer Journey",
-              personas: "Customer Personas",
-              competition: "Competition Analysis",
               strategic_recommendations: "Strategic Recommendations",
             };
 

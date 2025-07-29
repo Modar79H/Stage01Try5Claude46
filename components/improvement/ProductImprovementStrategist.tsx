@@ -191,156 +191,174 @@ export function ProductImprovementStrategist({
   };
 
   return (
-    <Card
-      className={cn(
-        "transition-all duration-300",
-        isExpanded
-          ? "fixed inset-4 z-50 flex flex-col"
-          : "relative hover:shadow-lg",
-      )}
-    >
-      <CardHeader>
+    <Card className="mt-8 border-2 border-primary/20 shadow-lg">
+      <CardHeader className="bg-gradient-to-r from-orange-500/10 to-orange-500/5">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Wrench className="h-5 w-5 text-orange-600" />
-            <CardTitle>Product Improvement Strategist</CardTitle>
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-orange-600 rounded-lg">
+              <Wrench className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <CardTitle className="text-xl font-bold flex items-center gap-2">
+                Product Improvement Strategist
+                <span className="text-sm font-normal text-muted-foreground">
+                  Powered by GPT-4
+                </span>
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Get personalized product improvement advice based on your
+                customer data
+              </p>
+            </div>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2">
             <Button
               variant="ghost"
-              size="sm"
+              size="icon"
+              onClick={startNewConversation}
+              title="New Conversation"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => setShowConversations(!showConversations)}
+              title="Chat History"
             >
               <History className="h-4 w-4" />
             </Button>
             <Button
               variant="ghost"
-              size="sm"
+              size="icon"
               onClick={() => setIsExpanded(!isExpanded)}
             >
-              {isExpanded ? (
-                <Minimize2 className="h-4 w-4" />
-              ) : (
-                <Maximize2 className="h-4 w-4" />
-              )}
+              {isExpanded ? <Minimize2 /> : <Maximize2 />}
             </Button>
           </div>
         </div>
-        <div className="flex items-center justify-between mt-2">
-          <div className="flex items-center space-x-2 flex-1">
-            {isEditingTitle ? (
-              <>
-                <input
-                  type="text"
-                  value={editedTitle}
-                  onChange={(e) => setEditedTitle(e.target.value)}
-                  className="flex-1 px-2 py-1 border rounded text-sm"
-                  autoFocus
-                />
-                <Button size="sm" variant="ghost" onClick={updateTitle}>
-                  <Check className="h-3 w-3" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setIsEditingTitle(false)}
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </>
-            ) : (
-              <>
-                <span className="text-sm text-gray-600">
-                  {conversationTitle}
-                </span>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => {
-                    setEditedTitle(conversationTitle);
-                    setIsEditingTitle(true);
-                  }}
-                >
-                  <Edit2 className="h-3 w-3" />
-                </Button>
-              </>
-            )}
-          </div>
-          <Button size="sm" variant="outline" onClick={startNewConversation}>
-            <Plus className="h-3 w-3 mr-1" />
-            New
-          </Button>
-        </div>
       </CardHeader>
-      <CardContent
-        className={cn(
-          "flex flex-col",
-          isExpanded ? "flex-1 overflow-hidden" : "h-[500px]",
-        )}
-      >
-        {showConversations ? (
-          <ConversationList
-            onSelectConversation={loadConversation}
-            onClose={() => setShowConversations(false)}
-          />
-        ) : (
-          <>
-            <div className="flex-1 overflow-y-auto mb-4 space-y-4">
-              {messages.length === 0 ? (
-                <div className="text-center py-8">
-                  <Wrench className="h-12 w-12 text-orange-200 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">
-                    Product Improvement Strategist
-                  </h3>
-                  <p className="text-gray-600 mb-6">
-                    I analyze customer feedback to help you prioritize and
-                    implement product improvements that matter most.
-                  </p>
-                  <div className="space-y-2">
-                    <p className="text-sm text-gray-500">
-                      Ask me about product issues, quality improvements, or
-                      feature requests
+      <CardContent className="p-0">
+        <div
+          className={cn(
+            "transition-all duration-300 overflow-hidden",
+            isExpanded ? "h-[600px]" : "h-[400px]",
+          )}
+        >
+          <div className="h-full flex flex-col">
+            {/* Conversation Title Bar */}
+            {conversationId && (
+              <div className="px-4 py-2 bg-muted/50 border-b flex items-center justify-between">
+                {isEditingTitle ? (
+                  <div className="flex items-center gap-2 flex-1">
+                    <input
+                      type="text"
+                      value={editedTitle}
+                      onChange={(e) => setEditedTitle(e.target.value)}
+                      className="flex-1 px-2 py-1 border rounded-md"
+                      autoFocus
+                    />
+                    <Button size="icon" variant="ghost" onClick={updateTitle}>
+                      <Check className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => setIsEditingTitle(false)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Wrench className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">{conversationTitle}</span>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => {
+                        setEditedTitle(conversationTitle);
+                        setIsEditingTitle(true);
+                      }}
+                      className="h-6 w-6"
+                    >
+                      <Edit2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
+                <span className="text-sm text-muted-foreground">
+                  {productName}
+                </span>
+              </div>
+            )}
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto">
+              {showConversations ? (
+                <ConversationList
+                  onSelect={loadConversation}
+                  onNew={startNewConversation}
+                  brandId={brandId}
+                  productId={productId}
+                />
+              ) : messages.length === 0 ? (
+                <div className="p-6 space-y-6">
+                  <div className="text-center">
+                    <h3 className="text-lg font-semibold mb-2">
+                      🔧 Welcome to Your Product Improvement Strategist!
+                    </h3>
+                    <p className="text-muted-foreground max-w-2xl mx-auto">
+                      I have access to all your customer analyses for{" "}
+                      <strong>{productName}</strong>. I can help you prioritize
+                      product improvements, identify quality issues, and provide
+                      actionable recommendations based on your actual customer
+                      feedback.
                     </p>
                   </div>
+
+                  <SuggestedPrompts
+                    prompts={suggestions}
+                    onSelect={handleSend}
+                  />
                 </div>
               ) : (
-                <MessageList messages={messages} />
+                <MessageList
+                  messages={messages}
+                  isLoading={isLoading}
+                  messagesEndRef={messagesEndRef}
+                />
               )}
-              <div ref={messagesEndRef} />
             </div>
 
-            {messages.length === 0 && suggestions.length > 0 && (
-              <SuggestedPrompts
-                prompts={suggestions}
-                onSelectPrompt={handleSend}
-              />
-            )}
-
-            <div className="relative">
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Ask about product improvements..."
-                className="w-full p-3 pr-12 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-orange-500"
-                rows={3}
-                disabled={isLoading}
-              />
-              <Button
-                onClick={() => handleSend(input)}
-                disabled={!input.trim() || isLoading}
-                size="sm"
-                className="absolute bottom-2 right-2 bg-orange-600 hover:bg-orange-700"
-              >
-                {isLoading ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}
-              </Button>
+            {/* Input */}
+            <div className="border-t p-4">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyPress={(e) =>
+                    e.key === "Enter" && !isLoading && handleSend(input)
+                  }
+                  placeholder="Ask about product improvements, quality issues, or feature requests..."
+                  className="flex-1 px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  disabled={isLoading}
+                />
+                <Button
+                  onClick={() => handleSend(input)}
+                  disabled={isLoading || !input.trim()}
+                  size="sm"
+                >
+                  {isLoading ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
             </div>
-          </>
-        )}
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

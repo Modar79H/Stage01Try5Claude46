@@ -7,8 +7,9 @@ export interface CSVRow {
 
 export interface ProcessedReview {
   text: string;
-  rating?: number;
-  date?: Date;
+  rating: number;
+  date: Date;
+  productVariation?: string;
   metadata: Record<string, any>;
 }
 
@@ -56,12 +57,27 @@ class CSVProcessingService {
       const headers = Object.keys(parseResult.data[0]);
       const columnMapping = this.detectColumns(headers);
 
+      // Check for all required columns
+      const missingColumns: string[] = [];
+
       if (!columnMapping.reviewText) {
+        missingColumns.push("review text column");
+      }
+      if (!columnMapping.rating) {
+        missingColumns.push("rating column");
+      }
+      if (!columnMapping.date) {
+        missingColumns.push("date column");
+      }
+
+      if (missingColumns.length > 0) {
         return {
           reviews: [],
           totalRows: parseResult.data.length,
           validRows: 0,
-          errors: ["Could not detect review text column"],
+          errors: [
+            `Missing required columns: ${missingColumns.join(", ")}. Please ensure your CSV contains review text, rating, and date columns.`,
+          ],
         };
       }
 
@@ -210,34 +226,44 @@ class CSVProcessingService {
     row: CSVRow,
     columnMapping: ReturnType<typeof this.detectColumns>,
   ): ProcessedReview | null {
+    // Check for required fields
     if (!columnMapping.reviewText || !row[columnMapping.reviewText]) {
-      return null;
+      throw new Error("Review text is missing");
+    }
+
+    if (!columnMapping.rating || !row[columnMapping.rating]) {
+      throw new Error("Rating is missing");
+    }
+
+    if (!columnMapping.date || !row[columnMapping.date]) {
+      throw new Error("Date is missing");
     }
 
     const text = String(row[columnMapping.reviewText]).trim();
     if (text.length < 5) {
-      // Skip very short reviews
-      return null;
+      throw new Error("Review text is too short (minimum 5 characters)");
     }
 
-    let rating: number | undefined;
-    if (columnMapping.rating && row[columnMapping.rating]) {
-      const ratingValue = row[columnMapping.rating];
-      const parsed = parseFloat(ratingValue);
-      if (!isNaN(parsed)) {
-        rating = Math.max(1, Math.min(5, parsed));
-      }
+    // Process rating (required)
+    const ratingValue = row[columnMapping.rating];
+    const parsedRating = parseFloat(ratingValue);
+    if (isNaN(parsedRating)) {
+      throw new Error(`Invalid rating value: "${ratingValue}"`);
     }
+    const rating = Math.max(1, Math.min(5, parsedRating));
 
-    let date: Date | undefined;
-    if (columnMapping.date && row[columnMapping.date]) {
-      const dateValue = row[columnMapping.date];
-      if (dateValue) {
-        const parsed = new Date(dateValue);
-        if (!isNaN(parsed.getTime())) {
-          date = parsed;
-        }
-      }
+    // Process date (required)
+    const dateValue = row[columnMapping.date];
+    const parsedDate = new Date(dateValue);
+    if (isNaN(parsedDate.getTime())) {
+      throw new Error(`Invalid date value: "${dateValue}"`);
+    }
+    const date = parsedDate;
+
+    // Process product variation (optional)
+    let productVariation: string | undefined;
+    if (columnMapping.productVariation && row[columnMapping.productVariation]) {
+      productVariation = String(row[columnMapping.productVariation]).trim();
     }
 
     // Collect all other columns as metadata
@@ -246,7 +272,8 @@ class CSVProcessingService {
       if (
         key !== columnMapping.reviewText &&
         key !== columnMapping.rating &&
-        key !== columnMapping.date
+        key !== columnMapping.date &&
+        key !== columnMapping.productVariation
       ) {
         metadata[key] = row[key];
       }
@@ -256,6 +283,7 @@ class CSVProcessingService {
       text,
       rating,
       date,
+      productVariation,
       metadata,
     };
   }

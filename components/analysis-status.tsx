@@ -25,8 +25,6 @@ const ANALYSIS_TYPES = [
   { key: "stp", label: "STP Analysis" },
   { key: "swot", label: "SWOT Analysis" },
   { key: "customer_journey", label: "Customer Journey" },
-  { key: "personas", label: "Customer Personas" },
-  { key: "competition", label: "Competition Analysis" },
   { key: "smart_competition", label: "🧠 Smart Competition Analysis" },
   { key: "strategic_recommendations", label: "Strategic Recommendations" },
 ];
@@ -49,9 +47,7 @@ export function AnalysisStatus({
 
   const visibleAnalyses = hasCompetitors
     ? ANALYSIS_TYPES
-    : ANALYSIS_TYPES.filter(
-        (a) => !["competition", "smart_competition"].includes(a.key),
-      );
+    : ANALYSIS_TYPES.filter((a) => !["smart_competition"].includes(a.key));
 
   const refreshStatus = async () => {
     setIsRefreshing(true);

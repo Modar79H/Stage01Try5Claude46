@@ -22,8 +22,6 @@ import { JTBDAnalysis } from "@/components/analysis/jtbd-analysis";
 import { STPAnalysis } from "@/components/analysis/stp-analysis";
 import { SWOTAnalysis } from "@/components/analysis/swot-analysis";
 import { CustomerJourney } from "@/components/analysis/customer-journey";
-import { CustomerPersonas } from "@/components/analysis/customer-personas";
-import { CompetitionAnalysis } from "@/components/analysis/competition-analysis";
 import { SmartCompetitionAnalysis } from "@/components/analysis/smart-competition-analysis";
 import { StrategicRecommendations } from "@/components/analysis/strategic-recommendations";
 import { ProductActions } from "@/components/product-actions";
@@ -86,7 +84,7 @@ export default async function ProductAnalysisPage({
   );
 
   const hasCompetitors = product.competitors.length > 0;
-  const expectedAnalyses = hasCompetitors ? 12 : 10; // 12 includes smart_competition
+  const expectedAnalyses = hasCompetitors ? 10 : 9; // 10 includes smart_competition
   const completedAnalyses = product.analyses.filter(
     (a) => a.status === "completed",
   ).length;
@@ -248,23 +246,6 @@ export default async function ProductAnalysisPage({
               <CustomerJourney analysis={analyses.customer_journey} />
             </CollapsibleAnalysis>
 
-            <CollapsibleAnalysis title="Customer Personas" defaultOpen={false}>
-              <CustomerPersonas
-                analysis={analyses.personas}
-                brandId={product.brandId}
-                productId={product.id}
-                productName={product.name}
-              />
-            </CollapsibleAnalysis>
-
-            {hasCompetitors && (
-              <CollapsibleAnalysis
-                title="Competition Analysis"
-                defaultOpen={false}
-              >
-                <CompetitionAnalysis analysis={analyses.competition} />
-              </CollapsibleAnalysis>
-            )}
 
             {hasCompetitors && (
               <CollapsibleAnalysis

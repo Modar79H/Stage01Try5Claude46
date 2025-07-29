@@ -2,7 +2,8 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
-import { Navigation } from "@/components/navigation";
+import { Sidebar } from "@/components/layout/sidebar";
+import { Header } from "@/components/layout/header";
 import DashboardWrapper from "@/components/DashboardWrapper";
 
 export default async function DashboardLayout({
@@ -17,11 +18,16 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navigation />
-      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        <DashboardWrapper>{children}</DashboardWrapper>
-      </main>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <Sidebar user={session.user} />
+      <div className="lg:pl-64">
+        <Header />
+        <main className="px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mx-auto max-w-7xl">
+            <DashboardWrapper>{children}</DashboardWrapper>
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

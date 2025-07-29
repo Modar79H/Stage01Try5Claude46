@@ -575,81 +575,6 @@ export async function POST(
             </div>
           `;
 
-          case "personas":
-            const personas = data.customer_personas;
-            return `
-            <div class="analysis-content">
-              <h3>Customer Personas</h3>
-              ${(personas || [])
-                .map(
-                  (persona: any) => `
-                <div class="persona-item">
-                  <h4>${persona.persona_name} (${persona.representation_percentage})</h4>
-                  <p>${persona.persona_intro}</p>
-                  <div class="persona-details">
-                    <div>
-                      <strong>Demographics:</strong>
-                      <ul>
-                        <li>Age: ${persona.demographics?.age || "N/A"}</li>
-                        <li>Education: ${persona.demographics?.education_level || "N/A"}</li>
-                        <li>Job: ${persona.demographics?.job_title || "N/A"}</li>
-                        <li>Income: ${persona.demographics?.income_range || "N/A"}</li>
-                      </ul>
-                    </div>
-                    <div>
-                      <strong>Goals & Motivations:</strong>
-                      <ul>
-                        ${(persona.goals_motivations || []).map((goal: string) => `<li>${goal}</li>`).join("")}
-                      </ul>
-                    </div>
-                    <div>
-                      <strong>Pain Points:</strong>
-                      <ul>
-                        ${(persona.pain_points_frustrations || []).map((pain: string) => `<li>${pain}</li>`).join("")}
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              `,
-                )
-                .join("")}
-            </div>
-          `;
-
-          case "competition":
-            const competition = data.competition_analysis;
-            return `
-            <div class="analysis-content">
-              <h3>Competition Analysis</h3>
-              <div>
-                <h4>Unique Selling Points (USPs)</h4>
-                <ul>
-                  ${(competition?.usps || []).map((usp: string) => `<li>${usp}</li>`).join("")}
-                </ul>
-              </div>
-              <div>
-                <h4>Pain Points vs Competitors</h4>
-                <ul>
-                  ${(competition?.pain_points || []).map((pain: string) => `<li>${pain}</li>`).join("")}
-                </ul>
-              </div>
-              <div>
-                <h4>Competitive Matrix</h4>
-                ${(competition?.comparison_matrix || [])
-                  .map(
-                    (item: any) => `
-                  <div class="segment-item">
-                    <strong>${item.feature || "Feature"}</strong>
-                    <p><strong>Our Product:</strong> ${item.our_product || "N/A"}</p>
-                    <p><strong>Competitors:</strong> ${item.competitors || "N/A"}</p>
-                  </div>
-                `,
-                  )
-                  .join("")}
-              </div>
-            </div>
-          `;
-
           case "strategic_recommendations":
             const recommendations = data.strategic_recommendations;
             return `
@@ -1224,8 +1149,6 @@ export async function POST(
                     stp: "STP Analysis",
                     swot: "SWOT Analysis",
                     customer_journey: "Customer Journey",
-                    personas: "Customer Personas",
-                    competition: "Competition Analysis",
                     smart_competition: "Smart Competition Analysis",
                     strategic_recommendations: "Strategic Recommendations",
                   };
@@ -1248,8 +1171,6 @@ export async function POST(
                 stp: "STP Analysis",
                 swot: "SWOT Analysis",
                 customer_journey: "Customer Journey Mapping",
-                personas: "Customer Personas",
-                competition: "Competition Analysis",
                 smart_competition: "Smart Competition Analysis",
                 strategic_recommendations: "Strategic Recommendations",
               };

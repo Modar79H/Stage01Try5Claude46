@@ -17,6 +17,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { STPChart } from "@/components/charts/stp-chart";
 import {
   Target,
@@ -38,6 +44,7 @@ import {
   Eye,
   X,
   MessageCircle,
+  HelpCircle,
 } from "lucide-react";
 import { PersonaChatbot } from "@/components/persona/PersonaChatbot";
 
@@ -113,7 +120,12 @@ interface STPAnalysisProps {
   productName?: string;
 }
 
-export function STPAnalysis({ analysis, brandId, productId, productName }: STPAnalysisProps) {
+export function STPAnalysis({
+  analysis,
+  brandId,
+  productId,
+  productName,
+}: STPAnalysisProps) {
   const [showPersonaDialog, setShowPersonaDialog] = useState(false);
   const [selectedPersona, setSelectedPersona] = useState<any>(null);
   const [showChatbot, setShowChatbot] = useState(false);
@@ -130,10 +142,12 @@ export function STPAnalysis({ analysis, brandId, productId, productName }: STPAn
   };
   if (!analysis || analysis.status !== "completed") {
     return (
-      <Card>
+      <Card variant="glass" hover>
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <Target className="h-5 w-5 mr-2" />
+          <CardTitle className="flex items-center text-gray-900 dark:text-white">
+            <div className="p-2 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 mr-3">
+              <Target className="h-5 w-5 text-white" />
+            </div>
             STP Analysis
           </CardTitle>
           <CardDescription>
@@ -142,7 +156,7 @@ export function STPAnalysis({ analysis, brandId, productId, productName }: STPAn
         </CardHeader>
         <CardContent>
           {analysis?.status === "failed" ? (
-            <div className="flex items-center space-x-2 text-red-600 bg-red-50 p-4 rounded-md">
+            <div className="flex items-center space-x-2 text-red-600 bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200 dark:border-red-800">
               <AlertCircle className="h-4 w-4" />
               <span className="text-sm">
                 Analysis failed: {analysis.error || "Unknown error"}
@@ -151,8 +165,8 @@ export function STPAnalysis({ analysis, brandId, productId, productName }: STPAn
           ) : (
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                <p className="text-gray-600">Analysis in progress...</p>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gradient-primary mx-auto mb-4"></div>
+                <p className="text-gray-600 dark:text-gray-400">Analysis in progress...</p>
               </div>
             </div>
           )}
@@ -165,15 +179,17 @@ export function STPAnalysis({ analysis, brandId, productId, productName }: STPAn
 
   if (!data) {
     return (
-      <Card>
+      <Card variant="glass" hover>
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <Target className="h-5 w-5 mr-2" />
+          <CardTitle className="flex items-center text-gray-900 dark:text-white">
+            <div className="p-2 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 mr-3">
+              <Target className="h-5 w-5 text-white" />
+            </div>
             STP Analysis
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-gray-600">No STP analysis data available.</p>
+          <p className="text-gray-600 dark:text-gray-400">No STP analysis data available.</p>
         </CardContent>
       </Card>
     );
@@ -182,38 +198,49 @@ export function STPAnalysis({ analysis, brandId, productId, productName }: STPAn
   return (
     <div className="space-y-6">
       {/* STP Framework Overview */}
-      <Card className="bg-blue-50 border-blue-200">
+      <Card variant="gradient" className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800">
         <CardHeader>
-          <CardTitle className="text-blue-900">
+          <CardTitle className="text-green-900 dark:text-green-100 flex items-center">
+            <div className="p-2 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 mr-3">
+              <Target className="h-5 w-5 text-white" />
+            </div>
             STP Marketing Framework
           </CardTitle>
         </CardHeader>
-        <CardContent className="text-blue-800">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-white rounded-lg">
-              <Users className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-              <h3 className="font-semibold">Segmentation</h3>
-              <p className="text-sm">Divide market into groups</p>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="text-center p-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-sm border border-white/20 dark:border-gray-700/20 hover:shadow-md transition-shadow">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center mx-auto mb-4">
+                <Users className="h-8 w-8 text-white" />
+              </div>
+              <h3 className="font-semibold text-green-900 dark:text-green-100 mb-2">Segmentation</h3>
+              <p className="text-sm text-green-800 dark:text-green-200">Divide market into groups</p>
             </div>
-            <div className="text-center p-4 bg-white rounded-lg">
-              <Crosshair className="h-8 w-8 text-green-600 mx-auto mb-2" />
-              <h3 className="font-semibold">Targeting</h3>
-              <p className="text-sm">Select segments to serve</p>
+            <div className="text-center p-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-sm border border-white/20 dark:border-gray-700/20 hover:shadow-md transition-shadow">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center mx-auto mb-4">
+                <Crosshair className="h-8 w-8 text-white" />
+              </div>
+              <h3 className="font-semibold text-green-900 dark:text-green-100 mb-2">Targeting</h3>
+              <p className="text-sm text-green-800 dark:text-green-200">Select segments to serve</p>
             </div>
-            <div className="text-center p-4 bg-white rounded-lg">
-              <MapPin className="h-8 w-8 text-purple-600 mx-auto mb-2" />
-              <h3 className="font-semibold">Positioning</h3>
-              <p className="text-sm">Create distinct market position</p>
+            <div className="text-center p-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-sm border border-white/20 dark:border-gray-700/20 hover:shadow-md transition-shadow">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-4">
+                <MapPin className="h-8 w-8 text-white" />
+              </div>
+              <h3 className="font-semibold text-green-900 dark:text-green-100 mb-2">Positioning</h3>
+              <p className="text-sm text-green-800 dark:text-green-200">Create distinct market position</p>
             </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Market Definition */}
-      <Card>
+      <Card variant="glass" hover>
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <TrendingUp className="h-5 w-5 mr-2" />
+          <CardTitle className="flex items-center text-gray-900 dark:text-white">
+            <div className="p-2 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 mr-3">
+              <TrendingUp className="h-5 w-5 text-white" />
+            </div>
             Market Definition
           </CardTitle>
           <CardDescription>
@@ -221,17 +248,19 @@ export function STPAnalysis({ analysis, brandId, productId, productName }: STPAn
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-gray-700 leading-relaxed">
+          <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
             {data.market_definition}
           </p>
         </CardContent>
       </Card>
 
       {/* Segmentation */}
-      <Card>
+      <Card variant="glass" hover>
         <CardHeader>
-          <CardTitle className="flex items-center text-blue-700">
-            <Users className="h-5 w-5 mr-2" />
+          <CardTitle className="flex items-center text-gray-900 dark:text-white">
+            <div className="p-2 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 mr-3">
+              <Users className="h-5 w-5 text-white" />
+            </div>
             Market Segmentation
           </CardTitle>
           <CardDescription>
@@ -247,46 +276,61 @@ export function STPAnalysis({ analysis, brandId, productId, productName }: STPAn
 
           <div className="space-y-6">
             {data.segmentation?.map((segment, index) => (
-              <div key={index} className="border-l-4 border-blue-500 pl-4">
-                <div className="flex items-start justify-between mb-3">
-                  <h4 className="font-semibold text-lg">{segment.segment}</h4>
-                  <Badge variant="outline">{segment.percentage}</Badge>
+              <div key={index} className="border-l-4 border-gradient-primary pl-6 bg-gray-50/50 dark:bg-gray-800/50 rounded-r-lg p-6 hover:bg-gray-100/50 dark:hover:bg-gray-700/50 transition-colors">
+                <div className="flex items-start justify-between mb-4">
+                  <h4 className="font-semibold text-lg text-gray-900 dark:text-white">{segment.segment}</h4>
+                  <Badge variant="info" size="sm">{segment.percentage}</Badge>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <div>
-                    <h5 className="font-medium text-gray-900 mb-1">
+                    <h5 className="font-medium text-gray-900 dark:text-white mb-2">
                       Description
                     </h5>
-                    <p className="text-gray-700 text-sm">
+                    <p className="text-gray-700 dark:text-gray-300 text-sm">
                       {segment.description}
                     </p>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-green-50 p-3 rounded-lg">
-                      <h5 className="font-medium text-green-800 mb-1">
-                        Attractiveness
-                      </h5>
-                      <p className="text-green-700 text-sm">
+                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-4 rounded-xl border border-green-200 dark:border-green-800 shadow-sm">
+                      <div className="flex items-center mb-2">
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center mr-2">
+                          <CheckCircle className="h-4 w-4 text-white" />
+                        </div>
+                        <h5 className="font-medium text-green-800 dark:text-green-300">
+                          Attractiveness
+                        </h5>
+                      </div>
+                      <p className="text-green-700 dark:text-green-300 text-sm">
                         {segment.attractiveness_factors}
                       </p>
                     </div>
 
-                    <div className="bg-blue-50 p-3 rounded-lg">
-                      <h5 className="font-medium text-blue-800 mb-1">
-                        Opportunities
-                      </h5>
-                      <p className="text-blue-700 text-sm">
+                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-4 rounded-xl border border-blue-200 dark:border-blue-800 shadow-sm">
+                      <div className="flex items-center mb-2">
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center mr-2">
+                          <Lightbulb className="h-4 w-4 text-white" />
+                        </div>
+                        <h5 className="font-medium text-blue-800 dark:text-blue-300">
+                          Opportunities
+                        </h5>
+                      </div>
+                      <p className="text-blue-700 dark:text-blue-300 text-sm">
                         {segment.opportunities}
                       </p>
                     </div>
 
-                    <div className="bg-orange-50 p-3 rounded-lg">
-                      <h5 className="font-medium text-orange-800 mb-1">
-                        Challenges
-                      </h5>
-                      <p className="text-orange-700 text-sm">
+                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-4 rounded-xl border border-orange-200 dark:border-orange-800 shadow-sm">
+                      <div className="flex items-center mb-2">
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-orange-500 to-red-500 flex items-center justify-center mr-2">
+                          <AlertCircle className="h-4 w-4 text-white" />
+                        </div>
+                        <h5 className="font-medium text-orange-800 dark:text-orange-300">
+                          Challenges
+                        </h5>
+                      </div>
+                      <p className="text-orange-700 dark:text-orange-300 text-sm">
                         {segment.challenges}
                       </p>
                     </div>
@@ -294,11 +338,12 @@ export function STPAnalysis({ analysis, brandId, productId, productName }: STPAn
 
                   {/* Example Quote */}
                   {segment.example_quote && (
-                    <div className="bg-gray-50 p-3 rounded-lg border-l-4 border-gray-400">
-                      <h5 className="font-medium text-gray-800 mb-1">
+                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                      <h5 className="font-medium text-gray-900 dark:text-white mb-2 flex items-center">
+                        <MessageSquare className="h-4 w-4 mr-2 text-blue-600 dark:text-blue-400" />
                         Customer Quote
                       </h5>
-                      <p className="text-gray-700 text-sm italic">
+                      <p className="text-gray-700 dark:text-gray-300 text-sm italic">
                         "{segment.example_quote}"
                       </p>
                     </div>
@@ -306,25 +351,25 @@ export function STPAnalysis({ analysis, brandId, productId, productName }: STPAn
 
                   {/* Buyer Persona */}
                   {segment.buyer_persona && (
-                    <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-                      <div className="flex items-start justify-between mb-3">
+                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 p-6 rounded-xl border border-purple-200 dark:border-purple-800 shadow-sm">
+                      <div className="flex items-start justify-between mb-4">
                         <div className="flex items-center">
                           {segment.buyer_persona.image_url ? (
                             <img
                               src={segment.buyer_persona.image_url}
                               alt={segment.buyer_persona.persona_name}
-                              className="w-10 h-10 rounded-full object-cover mr-3"
+                              className="w-12 h-12 rounded-full object-cover mr-4 border-2 border-white shadow-sm"
                             />
                           ) : (
-                            <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center mr-3">
-                              <User className="h-5 w-5 text-white" />
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center mr-4 shadow-sm">
+                              <User className="h-6 w-6 text-white" />
                             </div>
                           )}
                           <div>
-                            <h5 className="font-semibold text-purple-900">
+                            <h5 className="font-semibold text-purple-900 dark:text-purple-100">
                               {segment.buyer_persona.persona_name}
                             </h5>
-                            <p className="text-sm text-purple-700">
+                            <p className="text-sm text-purple-700 dark:text-purple-300">
                               Represents{" "}
                               {segment.buyer_persona.representation_percentage}{" "}
                               of customers
@@ -336,7 +381,7 @@ export function STPAnalysis({ analysis, brandId, productId, productName }: STPAn
                             onClick={() =>
                               openPersonaDialog(segment.buyer_persona)
                             }
-                            className="bg-purple-600 hover:bg-purple-700"
+                            variant="gradient"
                             size="sm"
                           >
                             <Eye className="h-4 w-4 mr-2" />
@@ -356,10 +401,10 @@ export function STPAnalysis({ analysis, brandId, productId, productName }: STPAn
                           )}
                         </div>
                       </div>
-                      <p className="text-purple-800 italic text-sm">
+                      <p className="text-purple-800 dark:text-purple-200 italic text-sm mb-3">
                         {segment.buyer_persona.persona_intro}
                       </p>
-                      <div className="mt-2 text-sm text-purple-700">
+                      <div className="text-sm text-purple-700 dark:text-purple-300 bg-white/50 dark:bg-gray-800/50 rounded-lg p-3">
                         <span className="font-medium">Quick Profile:</span>{" "}
                         {segment.buyer_persona.demographics.age},{" "}
                         {segment.buyer_persona.demographics.job_title}
@@ -374,10 +419,12 @@ export function STPAnalysis({ analysis, brandId, productId, productName }: STPAn
       </Card>
 
       {/* Targeting Strategy */}
-      <Card>
+      <Card variant="glass" hover>
         <CardHeader>
-          <CardTitle className="flex items-center text-green-700">
-            <Crosshair className="h-5 w-5 mr-2" />
+          <CardTitle className="flex items-center text-gray-900 dark:text-white">
+            <div className="p-2 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 mr-3">
+              <Crosshair className="h-5 w-5 text-white" />
+            </div>
             Targeting Strategy
           </CardTitle>
           <CardDescription>
@@ -393,9 +440,47 @@ export function STPAnalysis({ analysis, brandId, productId, productName }: STPAn
           </div>
 
           <div>
-            <h4 className="font-semibold mb-2">Targeting Approach</h4>
+            <TooltipProvider>
+              <h4 className="font-semibold mb-2 flex items-center">
+                Targeting Approach
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="h-4 w-4 ml-2 text-gray-400 hover:text-gray-600 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-sm p-4 space-y-3 bg-gray-900 text-gray-50">
+                    <div>
+                      <strong className="text-white">Undifferentiated:</strong>{" "}
+                      Also called mass marketing, it involves offering a single
+                      marketing mix to the whole market without tailoring to
+                      specific segments.
+                    </div>
+                    <div>
+                      <strong className="text-white">Differentiated:</strong>{" "}
+                      Targets multiple distinct segments with different
+                      marketing mixes customized for each segment's needs and
+                      preferences.
+                    </div>
+                    <div>
+                      <strong className="text-white">Concentrated:</strong>{" "}
+                      Focuses all marketing efforts on one well-defined segment
+                      (a niche), tailoring product and marketing mix exclusively
+                      to that group.
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </h4>
+            </TooltipProvider>
             <p className="text-gray-700">
-              {data.targeting_strategy.approach_description}
+              <strong>
+                {data.targeting_strategy.approach_description.split(":")[0]}:
+              </strong>
+              {data.targeting_strategy.approach_description.includes(":")
+                ? data.targeting_strategy.approach_description
+                    .split(":")
+                    .slice(1)
+                    .join(":")
+                    .trim()
+                : data.targeting_strategy.approach_description}
             </p>
           </div>
 
@@ -409,10 +494,12 @@ export function STPAnalysis({ analysis, brandId, productId, productName }: STPAn
       </Card>
 
       {/* Positioning Strategy */}
-      <Card>
+      <Card variant="glass" hover>
         <CardHeader>
-          <CardTitle className="flex items-center text-purple-700">
-            <MapPin className="h-5 w-5 mr-2" />
+          <CardTitle className="flex items-center text-gray-900 dark:text-white">
+            <div className="p-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 mr-3">
+              <MapPin className="h-5 w-5 text-white" />
+            </div>
             Positioning Strategy
           </CardTitle>
           <CardDescription>
@@ -420,11 +507,14 @@ export function STPAnalysis({ analysis, brandId, productId, productName }: STPAn
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-            <h4 className="font-semibold text-purple-900 mb-2">
+          <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border border-purple-200 dark:border-purple-800 rounded-xl p-6 shadow-sm">
+            <h4 className="font-semibold text-purple-900 dark:text-purple-100 mb-3 flex items-center">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center mr-3">
+                <MapPin className="h-4 w-4 text-white" />
+              </div>
               Positioning Statement
             </h4>
-            <p className="text-purple-800 italic">
+            <p className="text-purple-800 dark:text-purple-200 italic">
               {data.positioning_strategy.positioning_statement}
             </p>
           </div>
@@ -465,10 +555,12 @@ export function STPAnalysis({ analysis, brandId, productId, productName }: STPAn
       </Card>
 
       {/* Implementation Recommendations */}
-      <Card>
+      <Card variant="glass" hover>
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <Lightbulb className="h-5 w-5 mr-2" />
+          <CardTitle className="flex items-center text-gray-900 dark:text-white">
+            <div className="p-2 rounded-lg bg-gradient-to-r from-yellow-500 to-orange-500 mr-3">
+              <Lightbulb className="h-5 w-5 text-white" />
+            </div>
             Implementation Recommendations
           </CardTitle>
           <CardDescription>
@@ -794,7 +886,7 @@ export function STPAnalysis({ analysis, brandId, productId, productName }: STPAn
           personaData={chatPersona}
           brandId={brandId}
           productId={productId}
-          productName={productName || 'this product'}
+          productName={productName || "this product"}
         />
       )}
     </div>

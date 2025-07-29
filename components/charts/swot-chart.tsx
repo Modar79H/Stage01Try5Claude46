@@ -82,34 +82,34 @@ export function SWOTChart({ data }: SWOTChartProps) {
       key: "strengths",
       title: "Strengths",
       data: data.strengths || [],
-      colors: ["#104862", "#1A5A7A", "#0C3448", "#2B6E90", "#083042"],
+      colors: ["#10B981", "#059669", "#047857", "#065F46", "#064E3B"],
     },
     {
       key: "weaknesses",
       title: "Weaknesses",
       data: data.weaknesses || [],
-      colors: ["#E97132", "#F08040", "#EC5820", "#F4955A", "#E84510"],
+      colors: ["#EF4444", "#DC2626", "#B91C1C", "#991B1B", "#7F1D1D"],
     },
     {
       key: "opportunities",
       title: "Opportunities",
       data: data.opportunities || [],
-      colors: ["#104862", "#0C3448", "#1A5A7A", "#083042", "#2B6E90"],
+      colors: ["#3B82F6", "#2563EB", "#1D4ED8", "#1E40AF", "#1E3A8A"],
     },
     {
       key: "threats",
       title: "Threats",
       data: data.threats || [],
-      colors: ["#E97132", "#EC5820", "#F08040", "#E84510", "#F4955A"],
+      colors: ["#F59E0B", "#D97706", "#B45309", "#92400E", "#78350F"],
     },
   ];
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {sections.map((section) => (
-        <div key={section.key} className="space-y-2">
-          <h3 className="text-lg font-semibold text-center">{section.title}</h3>
-          <div style={{ height: "250px" }}>
+        <div key={section.key} className="space-y-4">
+          <h3 className="text-lg font-semibold text-center text-gray-900 dark:text-white">{section.title}</h3>
+          <div className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm" style={{ height: "280px" }}>
             <Doughnut
               data={createChartData(
                 section.data,
