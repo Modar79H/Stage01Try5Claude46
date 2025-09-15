@@ -23,24 +23,73 @@ export interface ChatbotResponse {
 }
 
 class ChatbotService {
+  private convertHtmlToText(text: string): string {
+    // Convert HTML to readable text while preserving important information
+    return (
+      text
+        // Convert percentage spans to just the percentage value
+        .replace(
+          /<span[^>]*class="[^"]*bg-gradient[^"]*"[^>]*>([^<]+)<\/span>/g,
+          "$1",
+        )
+        // Convert strong/bold tags to markdown bold
+        .replace(/<strong[^>]*>([^<]+)<\/strong>/g, "**$1**")
+        // Convert em/italic tags to markdown italic
+        .replace(/<em[^>]*>([^<]+)<\/em>/g, "*$1*")
+        // Convert other spans to just their content
+        .replace(/<span[^>]*>([^<]+)<\/span>/g, "$1")
+        // Remove remaining HTML tags
+        .replace(/<[^>]*>/g, "")
+        // Decode HTML entities
+        .replace(/&nbsp;/g, " ")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&amp;/g, "&")
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+    );
+  }
+
+  private cleanAnalysisData(data: any): any {
+    if (typeof data === "string") {
+      return this.convertHtmlToText(data);
+    } else if (Array.isArray(data)) {
+      return data.map((item) => this.cleanAnalysisData(item));
+    } else if (data && typeof data === "object") {
+      const cleaned: any = {};
+      for (const [key, value] of Object.entries(data)) {
+        cleaned[key] = this.cleanAnalysisData(value);
+      }
+      return cleaned;
+    }
+    return data;
+  }
   async createConversation(
     userId: string,
-    brandId?: string,
-    productId?: string,
+    productId: string, // REQUIRED - chatbots only exist on product pages
     title?: string,
   ): Promise<string> {
     console.log("DEBUG: Creating conversation with:", {
       userId,
-      brandId,
       productId,
     });
+
+    // Get product to also store brandId for database consistency
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      include: { brand: true },
+    });
+
+    if (!product) {
+      throw new Error(`Product not found with ID: ${productId}`);
+    }
 
     const conversation = await prisma.conversation.create({
       data: {
         userId,
-        brandId,
+        brandId: product.brandId, // Store for database consistency
         productId,
-        title: title || "New Marketing Strategy Conversation",
+        title: title || "New Product Strategy Conversation",
         isActive: true,
         context: {},
       },
@@ -50,7 +99,6 @@ class ChatbotService {
 
   async buildContext(
     userId: string,
-    brandId?: string,
     productId?: string,
     query?: string,
   ): Promise<any> {
@@ -60,7 +108,7 @@ class ChatbotService {
       competitors: [],
     };
 
-    // Get product and related data if specified
+    // Get product and related data - PRODUCT-LEVEL ONLY
     if (productId) {
       try {
         const product = await prisma.product.findUnique({
@@ -70,45 +118,21 @@ class ChatbotService {
               where: { status: "completed" },
             },
             competitors: true,
-            brand: true,
+            brand: true, // Include brand for awareness but don't use brand-level data
           },
         });
 
         if (product) {
           context.product = product;
-          context.brand = product.brand;
+          context.brand = { name: product.brand.name }; // Only include brand name for awareness
           context.analyses = product.analyses;
           context.competitors = product.competitors;
 
           // Reviews are no longer included in chatbot context
-          // The chatbot only has access to the 13 analyses
+          // The chatbot only has access to the product's analyses
         }
       } catch (error) {
         console.error("Error fetching product context:", error);
-      }
-    } else if (brandId) {
-      try {
-        const brand = await prisma.brand.findUnique({
-          where: { id: brandId },
-          include: {
-            products: {
-              include: {
-                analyses: {
-                  where: { status: "completed" },
-                },
-              },
-            },
-          },
-        });
-
-        if (brand) {
-          context.brand = brand;
-          context.products = brand.products;
-          // Aggregate analyses from all products
-          context.analyses = brand.products.flatMap((p) => p.analyses);
-        }
-      } catch (error) {
-        console.error("Error fetching brand context:", error);
       }
     }
 
@@ -124,7 +148,7 @@ class ChatbotService {
       | "persona" = "marketing",
     personaData?: any,
   ): string {
-    // Check if we have product context
+    // Check if we have product context with analyses
     const hasProductContext =
       context.product && context.analyses && context.analyses.length > 0;
 
@@ -138,16 +162,16 @@ class ChatbotService {
 
       return `You are a senior ${typeDescriptions[chatbotType]} with 20+ years of experience. 
 
-IMPORTANT: You currently don't have access to any specific product data or customer analysis. 
+IMPORTANT: You currently don't have access to any specific product data with customer analyses. 
 
 When a user asks you a question, you should politely explain that:
 
-1. You need access to their specific product data and customer analyses to provide personalized, data-driven recommendations
-2. To get the full ${typeDescriptions[chatbotType]} experience, they need to navigate to a specific product page first
-3. Once on a product page, you'll have access to all their customer review analyses, sentiment data, personas, competitive intelligence, and strategic recommendations
+1. You need access to their specific product data with customer analyses to provide personalized, data-driven recommendations
+2. To get the full ${typeDescriptions[chatbotType]} experience, they need to navigate to a product page that has completed analyses
+3. Once on a product page with completed analyses, you'll have access to all their customer review analyses, sentiment data, personas, competitive intelligence, and strategic recommendations
 4. Only then can you provide specific, actionable advice based on their actual customer data
 
-Your response should be helpful and guide them to the right place, but don't provide generic advice. Always direct them to navigate to a product page to unlock the full potential of the ${typeDescriptions[chatbotType]} feature.
+Your response should be helpful and guide them to the right place, but don't provide generic advice. Always direct them to navigate to a product page with completed analyses to unlock the full potential of the ${typeDescriptions[chatbotType]} feature.
 
 Keep your response concise and friendly, focusing on directing them to the product page for the complete experience.`;
     }
@@ -348,7 +372,7 @@ You are NOT responsible for:
 • Answering questions outside the domain of branding, marketing, product development, customer insights, or product review insights. In such events, you must answer: "I'm your branding strategist, please let's stay focused on your brand and marketing goals instead."`;
     }
 
-    prompt += `\n\nYou have access to 11 comprehensive analyses that provide deep insights into customer behavior, sentiment, competitive positioning, and strategic recommendations.
+    prompt += `\n\nYou have access to comprehensive analyses that provide deep insights into customer behavior, sentiment, competitive positioning, and strategic recommendations for this specific product.
 
 CONTEXT AVAILABLE:
 `;
@@ -371,9 +395,16 @@ CONTEXT AVAILABLE:
             typeof analysis.data === "string"
               ? JSON.parse(analysis.data)
               : analysis.data;
-          prompt += `\n${JSON.stringify(data, null, 2)}`;
+          // Clean HTML from analysis data before adding to prompt
+          const cleanedData = this.cleanAnalysisData(data);
+          prompt += `\n${JSON.stringify(cleanedData, null, 2)}`;
         } catch (e) {
-          prompt += `\n${analysis.data}`;
+          // Also clean HTML from raw text data
+          const cleanedText =
+            typeof analysis.data === "string"
+              ? this.convertHtmlToText(analysis.data)
+              : analysis.data;
+          prompt += `\n${cleanedText}`;
         }
       });
     }
@@ -399,8 +430,11 @@ CONTEXT AVAILABLE:
 8. Reference competitor strategies when relevant
 9. Acknowledge data limitations and suggest additional research if needed
 10. Balance quick wins with long-term strategic initiatives
+11. Focus on this specific product's data and insights
 
-Remember: You have access to REAL customer data and comprehensive analyses. Every recommendation must be backed by specific insights from the data provided above. Avoid generic advice - be specific, actionable, and data-driven.`;
+CONTEXT: You have access to comprehensive analyses for ${context.product?.name || "this product"} from the ${context.brand?.name || "brand"}. Provide product-specific strategic insights and recommendations based on this product's customer data and analyses.
+
+Remember: You have access to REAL customer data and comprehensive analyses for this specific product. Every recommendation must be backed by specific insights from the data provided above. Avoid generic advice - be specific, actionable, and data-driven.`;
 
     return prompt;
   }
@@ -448,10 +482,9 @@ Remember: You have access to REAL customer data and comprehensive analyses. Ever
         await this.generateConversationTitle(conversationId, userMessage);
       }
 
-      // Build intelligent context based on user's data
+      // Build intelligent context based on user's data - PRODUCT-LEVEL ONLY
       const context = await this.buildContext(
         conversation.userId,
-        conversation.brandId || undefined,
         conversation.productId || undefined,
         userMessage,
       );
@@ -490,6 +523,10 @@ Remember: You have access to REAL customer data and comprehensive analyses. Ever
         systemPrompt.substring(0, 500),
       );
 
+      // Check if prompt is too large (rough estimate: 1 token ≈ 4 characters)
+      const estimatedTokens = Math.ceil(systemPrompt.length / 4);
+      console.log("DEBUG: Estimated system prompt tokens:", estimatedTokens);
+
       // Create messages array with context
       const messages = [
         { role: "system" as const, content: systemPrompt },
@@ -498,15 +535,30 @@ Remember: You have access to REAL customer data and comprehensive analyses. Ever
       ];
 
       const completion = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: "gpt-5-mini",
         messages: messages,
-        temperature: 0.7,
-        max_tokens: 1500,
+        max_completion_tokens: 8000,
+        reasoning_effort: "minimal",
       });
 
-      const assistantMessage =
+      // Log the actual model used
+      console.log(`🤖 Chatbot response completed using model: ${completion.model}`);
+      
+      // Debug logging
+      console.log("DEBUG: OpenAI completion response:", {
+        hasChoices: !!completion.choices,
+        choicesLength: completion.choices?.length,
+        firstChoice: completion.choices?.[0],
+        messageContent: completion.choices?.[0]?.message?.content,
+        finishReason: completion.choices?.[0]?.finish_reason,
+      });
+
+      let assistantMessage =
         completion.choices[0]?.message?.content ||
         "I apologize, but I couldn't generate a response. Please try again.";
+
+      // Final safety net: convert any HTML that might have leaked into the response
+      assistantMessage = this.convertHtmlToText(assistantMessage);
 
       // Save assistant message
       await prisma.message.create({
@@ -515,11 +567,10 @@ Remember: You have access to REAL customer data and comprehensive analyses. Ever
           role: "assistant",
           content: assistantMessage,
           metadata: {
-            model: "gpt-4o",
+            model: "gpt-5-mini",
             context: {
               analysesUsed: context.analyses?.map((a: any) => a.type) || [],
               hasProductContext: !!context.product,
-              hasBrandContext: !!context.brand,
             },
           },
         },
@@ -706,15 +757,18 @@ Remember: You have access to REAL customer data and comprehensive analyses. Ever
       Return only the title, nothing else.`;
 
       const completion = await openai.chat.completions.create({
-        model: "gpt-3.5-turbo",
+        model: "gpt-5-mini",
         messages: [{ role: "system", content: titlePrompt }],
-        temperature: 0.5,
-        max_tokens: 20,
+        max_completion_tokens: 20,
+        reasoning_effort: "minimal",
       });
 
       const title =
         completion.choices[0]?.message?.content?.trim() ||
         "Marketing Strategy Discussion";
+
+      // Log the actual model used for title generation
+      console.log(`🤖 Conversation title generated using model: ${completion.model} - "${title}"`);
 
       await prisma.conversation.update({
         where: { id: conversationId },

@@ -9,9 +9,21 @@ ChartJS.register(ArcElement, Tooltip, Legend);
 
 interface JTBDChartProps {
   data: {
-    functional_jobs?: Array<{ job_statement: string; percentage: string }>;
-    emotional_jobs?: Array<{ job_statement: string; percentage: string }>;
-    social_jobs?: Array<{ job_statement: string; percentage: string }>;
+    functional_jobs?: Array<{
+      job?: string;
+      job_statement: string;
+      percentage: string;
+    }>;
+    emotional_jobs?: Array<{
+      job?: string;
+      job_statement: string;
+      percentage: string;
+    }>;
+    social_jobs?: Array<{
+      job?: string;
+      job_statement: string;
+      percentage: string;
+    }>;
   };
 }
 
@@ -19,7 +31,11 @@ export function JTBDChart({ data }: JTBDChartProps) {
   const chartRef = useRef<ChartJS<"doughnut", number[], string>>(null);
 
   const createChartData = (
-    jobData: Array<{ job_statement: string; percentage: string }> = [],
+    jobData: Array<{
+      job?: string;
+      job_statement: string;
+      percentage: string;
+    }> = [],
     title: string,
     baseColor: string,
   ) => {
@@ -56,9 +72,25 @@ export function JTBDChart({ data }: JTBDChartProps) {
       return colors;
     };
 
+    // Sort data by percentage in descending order
+    const sortedData = [...jobData].sort((a, b) => {
+      const aValue = a.percentage
+        ? parseFloat(a.percentage.replace("%", ""))
+        : 0;
+      const bValue = b.percentage
+        ? parseFloat(b.percentage.replace("%", ""))
+        : 0;
+      return bValue - aValue;
+    });
+
     return {
-      labels: jobData.map((item) => {
-        // Truncate long job statements for legend
+      labels: sortedData.map((item) => {
+        // Use job name if available, otherwise truncate job statement
+        if (item.job) {
+          return item.job.length > 40
+            ? item.job.substring(0, 40) + "..."
+            : item.job;
+        }
         const statement = item.job_statement.replace(/"/g, "");
         return statement.length > 40
           ? statement.substring(0, 40) + "..."
@@ -66,10 +98,10 @@ export function JTBDChart({ data }: JTBDChartProps) {
       }),
       datasets: [
         {
-          data: jobData.map((item) =>
-            parseFloat(item.percentage.replace("%", "")),
+          data: sortedData.map((item) =>
+            item.percentage ? parseFloat(item.percentage.replace("%", "")) : 0,
           ),
-          backgroundColor: generateColors(baseColor, jobData.length),
+          backgroundColor: generateColors(baseColor, sortedData.length),
           borderWidth: 2,
           borderColor: "#ffffff",
         },
@@ -82,22 +114,7 @@ export function JTBDChart({ data }: JTBDChartProps) {
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        position: "bottom" as const,
-        labels: {
-          padding: 15,
-          usePointStyle: true,
-          font: {
-            size: 11,
-          },
-          generateLabels: function (chart: any) {
-            const original =
-              ChartJS.defaults.plugins.legend.labels.generateLabels;
-            const labels = original.call(this, chart);
-
-            // Limit to top 5 items to prevent overcrowding
-            return labels.slice(0, 5);
-          },
-        },
+        display: false, // Disable default legend, we'll create custom scrollable one
       },
       tooltip: {
         callbacks: {
@@ -132,24 +149,69 @@ export function JTBDChart({ data }: JTBDChartProps) {
     },
   ];
 
+  const CustomLegend = ({
+    data,
+    baseColor,
+  }: {
+    data: any;
+    baseColor: string;
+  }) => {
+    if (
+      !data.labels ||
+      data.labels.length === 0 ||
+      data.labels[0] === "No data"
+    ) {
+      return (
+        <div className="text-center text-gray-500 text-sm">
+          No data available
+        </div>
+      );
+    }
+
+    return (
+      <div className="max-h-32 overflow-y-auto border rounded p-2 bg-gray-50">
+        <div className="space-y-1">
+          {data.labels.map((label: string, index: number) => (
+            <div key={index} className="flex items-center gap-2 text-xs">
+              <div
+                className="w-3 h-3 rounded-full flex-shrink-0"
+                style={{
+                  backgroundColor: data.datasets[0].backgroundColor[index],
+                }}
+              ></div>
+              <span className="truncate flex-1" title={label}>
+                {label}
+              </span>
+              <span className="text-gray-600 font-medium">
+                {data.datasets[0]?.data[index]?.toFixed(1)}%
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {sections.map((section) => (
-        <div key={section.key} className="space-y-2">
-          <h3 className="text-lg font-semibold text-center">{section.title}</h3>
-          <div style={{ height: "300px" }}>
-            <Doughnut
-              data={createChartData(section.data, section.title, section.color)}
-              options={options}
-            />
+      {sections.map((section) => {
+        const chartData = createChartData(
+          section.data,
+          section.title,
+          section.color,
+        );
+        return (
+          <div key={section.key} className="space-y-3">
+            <h3 className="text-lg font-semibold text-center">
+              {section.title}
+            </h3>
+            <div style={{ height: "200px" }}>
+              <Doughnut data={chartData} options={options} />
+            </div>
+            <CustomLegend data={chartData} baseColor={section.color} />
           </div>
-          {section.data.length > 5 && (
-            <p className="text-xs text-gray-500 text-center">
-              Showing top 5 of {section.data.length} jobs
-            </p>
-          )}
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

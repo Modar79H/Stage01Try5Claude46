@@ -18,7 +18,11 @@ import {
   Package,
   MapPin,
   Clock,
+  Info,
 } from "lucide-react";
+import { TemporalBadge, TrendIndicator } from "@/components/temporal";
+import { TemporalTrend } from "@/lib/types/temporal";
+import { BadgeTooltip } from "./BadgeTooltip";
 
 interface FourWMatrixProps {
   analysis?: {
@@ -30,6 +34,7 @@ interface FourWMatrixProps {
           percentage: string;
           summary: string;
           example_quote: string;
+          temporal_trend?: TemporalTrend;
         }>;
         what: Array<{
           topic: string;
@@ -37,6 +42,7 @@ interface FourWMatrixProps {
           percentage: string;
           summary: string;
           example_quote: string;
+          temporal_trend?: TemporalTrend;
         }>;
         where: Array<{
           topic: string;
@@ -44,6 +50,7 @@ interface FourWMatrixProps {
           percentage: string;
           summary: string;
           example_quote: string;
+          temporal_trend?: TemporalTrend;
         }>;
         when: Array<{
           topic: string;
@@ -51,6 +58,7 @@ interface FourWMatrixProps {
           percentage: string;
           summary: string;
           example_quote: string;
+          temporal_trend?: TemporalTrend;
         }>;
       };
     };
@@ -151,7 +159,7 @@ export function FourWMatrix({ analysis }: FourWMatrixProps) {
     );
   }
 
-  const data = analysis.data.four_w_matrix;
+  const data = analysis.data?.four_w_matrix;
 
   if (!data) {
     return (
@@ -195,6 +203,13 @@ export function FourWMatrix({ analysis }: FourWMatrixProps) {
           const sectionData = data[section];
           if (!sectionData || sectionData.length === 0) return null;
 
+          // Filter out topics with percentage < 1%
+          const filteredData = sectionData.filter((item: any) => {
+            if (!item.percentage) return true; // Keep topics without percentage
+            const value = parseFloat(item.percentage.replace('%', ''));
+            return value >= 1; // Only keep topics with 1% or higher
+          });
+
           return (
             <Card key={section}>
               <CardHeader>
@@ -208,25 +223,61 @@ export function FourWMatrix({ analysis }: FourWMatrixProps) {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {sectionData.map((item, index) => (
-                    <div
-                      key={index}
-                      className="border-l-4 border-blue-500 pl-4"
-                    >
+                  {filteredData.map((item, index) => (
+                    <div key={index} className="border-l-4 border-blue-500 pl-4">
                       <div className="flex items-start justify-between mb-2">
-                        <h4 className="font-semibold">{item.topic}</h4>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-semibold">{item.topic}</h4>
+                          {item.temporal_trend && (
+                            <TrendIndicator 
+                              status={item.temporal_trend.status} 
+                              timeline={item.temporal_trend.timeline}
+                              size="sm"
+                            />
+                          )}
+                        </div>
                         <div className="flex items-center space-x-2">
-                          <Badge
-                            className={getImportanceColor(item.importance)}
-                          >
-                            {item.importance}
-                          </Badge>
-                          <Badge variant="outline">{item.percentage}</Badge>
+                          {item.temporal_trend && (
+                            <BadgeTooltip 
+                              type="trend" 
+                              value={item.temporal_trend.status}
+                              description={item.temporal_trend.trend_summary}
+                            >
+                              <div>
+                                <TemporalBadge 
+                                  status={item.temporal_trend.status} 
+                                  size="sm"
+                                />
+                              </div>
+                            </BadgeTooltip>
+                          )}
+                          {item.importance && (
+                            <BadgeTooltip type="importance" value={item.importance}>
+                              <Badge className={getImportanceColor(item.importance)}>
+                                {item.importance}
+                              </Badge>
+                            </BadgeTooltip>
+                          )}
+                          {item.percentage && (
+                            <BadgeTooltip type="percentage" value={item.percentage}>
+                              <Badge variant="outline">{item.percentage}</Badge>
+                            </BadgeTooltip>
+                          )}
                         </div>
                       </div>
                       <p className="text-gray-700 text-sm mb-3">
                         {item.summary}
                       </p>
+                      {item.temporal_trend && item.temporal_trend.trend_summary && (
+                        <div className="text-sm text-gray-600 mb-3 italic">
+                          <strong>Over Time:</strong> {item.temporal_trend.trend_summary}
+                          {item.temporal_trend.last_mentioned && item.temporal_trend.status === 'RESOLVED' && (
+                            <span className="ml-2 text-green-600">
+                              (Last mentioned: {item.temporal_trend.last_mentioned})
+                            </span>
+                          )}
+                        </div>
+                      )}
                       {item.example_quote && (
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                           <div className="flex items-start space-x-2">

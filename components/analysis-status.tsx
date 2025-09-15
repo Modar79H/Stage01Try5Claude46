@@ -18,16 +18,17 @@ interface AnalysisStatusProps {
 
 const ANALYSIS_TYPES = [
   { key: "product_description", label: "Product Description" },
-  { key: "sentiment", label: "Sentiment Analysis" },
-  { key: "voice_of_customer", label: "Voice of Customer" },
-  { key: "four_w_matrix", label: "4W Matrix" },
+  { key: "voc_group", label: "VOC (Voice of Customer)" }, // Group VOC analyses
   { key: "jtbd", label: "Jobs to be Done" },
   { key: "stp", label: "STP Analysis" },
   { key: "swot", label: "SWOT Analysis" },
   { key: "customer_journey", label: "Customer Journey" },
-  { key: "smart_competition", label: "🧠 Smart Competition Analysis" },
+  { key: "smart_competition", label: "Smart Competition Analysis" },
   { key: "strategic_recommendations", label: "Strategic Recommendations" },
 ];
+
+// VOC sub-analyses
+const VOC_SUB_TYPES = ["voice_of_customer", "sentiment", "rating_analysis", "four_w_matrix"];
 
 export function AnalysisStatus({
   productId,
@@ -141,8 +142,34 @@ export function AnalysisStatus({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {visibleAnalyses.map((analysisType) => {
-          const analysis = analysisMap[analysisType.key];
-          const status = analysis?.status || "pending";
+          let status = "pending";
+          let analysis = null;
+          let error = null;
+
+          if (analysisType.key === "voc_group") {
+            // For VOC group, check if any of the sub-analyses are completed
+            const vocAnalyses = VOC_SUB_TYPES.map(type => analysisMap[type]).filter(Boolean);
+            if (vocAnalyses.length > 0) {
+              // If any VOC sub-analysis is completed, show as completed
+              const hasCompleted = vocAnalyses.some(a => a.status === "completed");
+              const hasProcessing = vocAnalyses.some(a => a.status === "processing");
+              const hasFailed = vocAnalyses.some(a => a.status === "failed");
+              
+              if (hasCompleted) {
+                status = "completed";
+              } else if (hasProcessing) {
+                status = "processing";
+              } else if (hasFailed) {
+                status = "failed";
+                // Get first error from failed analyses
+                error = vocAnalyses.find(a => a.status === "failed" && a.error)?.error;
+              }
+            }
+          } else {
+            analysis = analysisMap[analysisType.key];
+            status = analysis?.status || "pending";
+            error = analysis?.error;
+          }
 
           return (
             <div
@@ -153,16 +180,16 @@ export function AnalysisStatus({
                 {getStatusIcon(status)}
                 <div>
                   <p className="font-medium text-sm">{analysisType.label}</p>
-                  {analysis?.error && (
+                  {error && (
                     <p className="text-xs text-red-600 mt-1">
-                      {analysis.error}
+                      {error}
                     </p>
                   )}
                 </div>
               </div>
               <div className="flex items-center space-x-2">
                 {getStatusBadge(status)}
-                {status === "failed" && (
+                {status === "failed" && analysisType.key !== "voc_group" && (
                   <Button
                     variant="ghost"
                     size="sm"

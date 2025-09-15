@@ -14,20 +14,26 @@ export async function POST(request: NextRequest) {
     const {
       conversationId,
       message,
-      brandId,
-      productId,
+      productId, // REQUIRED - chatbots only exist on product pages
       stream = true,
       chatbotType = "marketing",
       personaData,
     } = body;
+
+    // Validate productId is provided
+    if (!productId) {
+      return NextResponse.json(
+        { error: "Product ID is required" },
+        { status: 400 },
+      );
+    }
 
     // Create new conversation if not provided
     let convId = conversationId;
     if (!convId) {
       convId = await chatbotService.createConversation(
         session.user.id,
-        brandId,
-        productId,
+        productId, // REQUIRED
       );
     }
 

@@ -8,21 +8,21 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const Card = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ className, variant = "default", hover = true, ...props }, ref) => {
+  ({ className, variant = "default", hover = false, ...props }, ref) => {
     const variants = {
-      default: "bg-card text-card-foreground shadow-sm",
-      glass: "bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-white/20 dark:border-gray-700/20 shadow-lg",
-      gradient: "bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 shadow-lg",
-      bordered: "bg-transparent border-2",
+      default: "bg-card text-card-foreground shadow-[0_1px_3px_rgba(0,0,0,0.1)]",
+      glass: "bg-white/70 dark:bg-gray-900/70 backdrop-blur-lg border-white/20 dark:border-gray-700/20",
+      gradient: "bg-gradient-to-br from-white via-gray-50/50 to-white dark:from-gray-900 dark:via-gray-800/50 dark:to-gray-900",
+      bordered: "bg-transparent border",
     };
 
     return (
       <div
         ref={ref}
         className={cn(
-          "rounded-xl border transition-all duration-200",
+          "rounded-lg border border-border transition-all duration-200",
           variants[variant],
-          hover && "hover:shadow-lg hover:-translate-y-0.5",
+          hover && "hover:shadow-md hover:-translate-y-0.5",
           className
         )}
         {...props}
@@ -51,7 +51,7 @@ const CardTitle = React.forwardRef<
   <h3
     ref={ref}
     className={cn(
-      "text-xl font-semibold leading-none tracking-tight text-gray-900 dark:text-white",
+      "text-lg font-semibold leading-none tracking-tight text-foreground",
       className
     )}
     {...props}
@@ -65,7 +65,7 @@ const CardDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <p
     ref={ref}
-    className={cn("text-sm text-muted-foreground mt-1.5", className)}
+    className={cn("text-sm text-muted-foreground mt-1", className)}
     {...props}
   />
 ));
@@ -86,7 +86,7 @@ const CardFooter = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "flex items-center p-6 pt-0 border-t border-gray-100 dark:border-gray-800",
+      "flex items-center p-6 pt-0",
       className
     )}
     {...props}

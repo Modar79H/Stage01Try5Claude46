@@ -4,14 +4,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import {
-  Search,
-  Bell,
-  Menu,
-  X,
-  Sparkles,
-  HelpCircle,
-} from "lucide-react";
+import { useTheme } from "@/providers/theme-provider";
+import { Bell, Menu, X, Sparkles, Sun, Moon } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,7 +20,15 @@ interface HeaderProps {
 }
 
 export function Header({ onMenuClick, showMenu = false }: HeaderProps) {
-  const [searchFocused, setSearchFocused] = useState(false);
+  const { theme, setTheme } = useTheme();
+
+  const toggleTheme = () => {
+    if (theme === "light") {
+      setTheme("dark");
+    } else {
+      setTheme("light");
+    }
+  };
 
   return (
     <header className="sticky top-0 z-30 h-16 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800">
@@ -43,35 +45,22 @@ export function Header({ onMenuClick, showMenu = false }: HeaderProps) {
               <Menu className="h-5 w-5" />
             </Button>
           )}
-          
-          {/* Search */}
-          <div className={cn(
-            "relative transition-all duration-300",
-            searchFocused ? "w-96" : "w-64"
-          )}>
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              type="search"
-              placeholder="Search products, brands..."
-              className="pl-10 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
-              onFocus={() => setSearchFocused(true)}
-              onBlur={() => setSearchFocused(false)}
-            />
-            {searchFocused && (
-              <div className="absolute top-full mt-2 w-full rounded-lg bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 p-4">
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Start typing to search...
-                </p>
-              </div>
-            )}
-          </div>
         </div>
 
         {/* Right Section */}
         <div className="flex items-center space-x-3">
-          {/* Help */}
-          <Button variant="ghost" size="icon" className="relative">
-            <HelpCircle className="h-5 w-5" />
+          {/* Theme Toggle */}
+          <Button
+            variant="outline"
+            size="icon"
+            className="relative"
+            onClick={toggleTheme}
+          >
+            {theme === "dark" ? (
+              <Sun className="h-5 w-5" />
+            ) : (
+              <Moon className="h-5 w-5" />
+            )}
           </Button>
 
           {/* Notifications */}
@@ -85,7 +74,9 @@ export function Header({ onMenuClick, showMenu = false }: HeaderProps) {
             <DropdownMenuContent align="end" className="w-80">
               <div className="flex items-center justify-between p-4">
                 <h3 className="font-semibold">Notifications</h3>
-                <Badge variant="info" size="sm">3 New</Badge>
+                <Badge variant="info" size="sm">
+                  3 New
+                </Badge>
               </div>
               <DropdownMenuSeparator />
               <div className="max-h-96 overflow-y-auto">
@@ -98,7 +89,9 @@ export function Header({ onMenuClick, showMenu = false }: HeaderProps) {
                         <p className="text-xs text-gray-500 mt-1">
                           Your product analysis for "Sample Product" is ready
                         </p>
-                        <p className="text-xs text-gray-400 mt-1">2 hours ago</p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          2 hours ago
+                        </p>
                       </div>
                     </div>
                   </DropdownMenuItem>
@@ -106,7 +99,10 @@ export function Header({ onMenuClick, showMenu = false }: HeaderProps) {
               </div>
               <DropdownMenuSeparator />
               <div className="p-2">
-                <Button variant="ghost" className="w-full justify-center text-sm">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-center text-sm"
+                >
                   View all notifications
                 </Button>
               </div>
@@ -124,9 +120,4 @@ export function Header({ onMenuClick, showMenu = false }: HeaderProps) {
       </div>
     </header>
   );
-}
-
-// Helper function
-function cn(...classes: (string | boolean | undefined)[]) {
-  return classes.filter(Boolean).join(" ");
 }

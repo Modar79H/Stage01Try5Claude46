@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { BadgeTooltip } from "./BadgeTooltip";
 import {
   Dialog,
   DialogContent,
@@ -47,6 +48,8 @@ import {
   HelpCircle,
 } from "lucide-react";
 import { PersonaChatbot } from "@/components/persona/PersonaChatbot";
+import { TemporalBadge, TrendIndicator } from "@/components/temporal";
+import { TemporalTrend } from "@/lib/types/temporal";
 
 interface STPAnalysisProps {
   analysis?: {
@@ -61,6 +64,7 @@ interface STPAnalysisProps {
           opportunities: string;
           challenges: string;
           example_quote?: string;
+          temporal_trend?: TemporalTrend;
           buyer_persona?: {
             persona_name: string;
             representation_percentage: string;
@@ -120,6 +124,61 @@ interface STPAnalysisProps {
   productName?: string;
 }
 
+// Helper function to format persona names
+function formatPersonaNames(
+  personaData: string | string[] | undefined,
+): string {
+  // Handle undefined or null
+  if (!personaData) {
+    return "No personas defined";
+  }
+
+  // Handle array of persona names
+  if (Array.isArray(personaData)) {
+    return personaData.join(", ");
+  }
+
+  // Handle string
+  if (typeof personaData === "string") {
+    // If it's already properly formatted with commas, return as is
+    if (personaData.includes(",")) {
+      return personaData;
+    }
+
+    // Handle concatenated names like "MayaSaraEvanRonNina"
+    // Try to split on capital letters
+    const result = personaData
+      .replace(/([a-z])([A-Z])/g, "$1, $2")
+      .replace(/([A-Z])([A-Z][a-z])/g, "$1, $2");
+
+    return result || personaData;
+  }
+
+  return "No personas defined";
+}
+
+// Helper function to format numbered list content
+function formatNumberedList(content: string | undefined): JSX.Element[] {
+  // Handle undefined or empty string
+  if (!content || typeof content !== "string") {
+    return [];
+  }
+
+  // Split by numbered patterns like "1)" or "1." or "(1)"
+  const items = content.split(/(?=\d+[\)\.]\s)/);
+
+  return items
+    .filter((item) => item.trim())
+    .map((item, index) => {
+      const trimmedItem = item.trim();
+      return (
+        <div key={index} className="mb-3">
+          <p className="text-gray-700 dark:text-gray-300">{trimmedItem}</p>
+        </div>
+      );
+    });
+}
+
 export function STPAnalysis({
   analysis,
   brandId,
@@ -131,13 +190,13 @@ export function STPAnalysis({
   const [showChatbot, setShowChatbot] = useState(false);
   const [chatPersona, setChatPersona] = useState<any>(null);
 
-  const openPersonaDialog = (persona: any) => {
-    setSelectedPersona(persona);
+  const openPersonaDialog = (persona: any, percentage?: string) => {
+    setSelectedPersona({ ...persona, percentage });
     setShowPersonaDialog(true);
   };
 
-  const openPersonaChat = (persona: any) => {
-    setChatPersona(persona);
+  const openPersonaChat = (persona: any, percentage?: string) => {
+    setChatPersona({ ...persona, percentage });
     setShowChatbot(true);
   };
   if (!analysis || analysis.status !== "completed") {
@@ -166,7 +225,9 @@ export function STPAnalysis({
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gradient-primary mx-auto mb-4"></div>
-                <p className="text-gray-600 dark:text-gray-400">Analysis in progress...</p>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Analysis in progress...
+                </p>
               </div>
             </div>
           )}
@@ -175,7 +236,7 @@ export function STPAnalysis({
     );
   }
 
-  const data = analysis.data.stp_analysis;
+  const data = analysis.data?.stp_analysis;
 
   if (!data) {
     return (
@@ -189,7 +250,9 @@ export function STPAnalysis({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-gray-600 dark:text-gray-400">No STP analysis data available.</p>
+          <p className="text-gray-600 dark:text-gray-400">
+            No STP analysis data available.
+          </p>
         </CardContent>
       </Card>
     );
@@ -198,7 +261,10 @@ export function STPAnalysis({
   return (
     <div className="space-y-6">
       {/* STP Framework Overview */}
-      <Card variant="gradient" className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800">
+      <Card
+        variant="gradient"
+        className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800"
+      >
         <CardHeader>
           <CardTitle className="text-green-900 dark:text-green-100 flex items-center">
             <div className="p-2 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 mr-3">
@@ -213,22 +279,34 @@ export function STPAnalysis({
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center mx-auto mb-4">
                 <Users className="h-8 w-8 text-white" />
               </div>
-              <h3 className="font-semibold text-green-900 dark:text-green-100 mb-2">Segmentation</h3>
-              <p className="text-sm text-green-800 dark:text-green-200">Divide market into groups</p>
+              <h3 className="font-semibold text-green-900 dark:text-green-100 mb-2">
+                Segmentation
+              </h3>
+              <p className="text-sm text-green-800 dark:text-green-200">
+                Divide market into groups
+              </p>
             </div>
             <div className="text-center p-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-sm border border-white/20 dark:border-gray-700/20 hover:shadow-md transition-shadow">
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center mx-auto mb-4">
                 <Crosshair className="h-8 w-8 text-white" />
               </div>
-              <h3 className="font-semibold text-green-900 dark:text-green-100 mb-2">Targeting</h3>
-              <p className="text-sm text-green-800 dark:text-green-200">Select segments to serve</p>
+              <h3 className="font-semibold text-green-900 dark:text-green-100 mb-2">
+                Targeting
+              </h3>
+              <p className="text-sm text-green-800 dark:text-green-200">
+                Select segments to serve
+              </p>
             </div>
             <div className="text-center p-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-sm border border-white/20 dark:border-gray-700/20 hover:shadow-md transition-shadow">
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-4">
                 <MapPin className="h-8 w-8 text-white" />
               </div>
-              <h3 className="font-semibold text-green-900 dark:text-green-100 mb-2">Positioning</h3>
-              <p className="text-sm text-green-800 dark:text-green-200">Create distinct market position</p>
+              <h3 className="font-semibold text-green-900 dark:text-green-100 mb-2">
+                Positioning
+              </h3>
+              <p className="text-sm text-green-800 dark:text-green-200">
+                Create distinct market position
+              </p>
             </div>
           </div>
         </CardContent>
@@ -275,145 +353,184 @@ export function STPAnalysis({
           )}
 
           <div className="space-y-6">
-            {data.segmentation?.map((segment, index) => (
-              <div key={index} className="border-l-4 border-gradient-primary pl-6 bg-gray-50/50 dark:bg-gray-800/50 rounded-r-lg p-6 hover:bg-gray-100/50 dark:hover:bg-gray-700/50 transition-colors">
-                <div className="flex items-start justify-between mb-4">
-                  <h4 className="font-semibold text-lg text-gray-900 dark:text-white">{segment.segment}</h4>
-                  <Badge variant="info" size="sm">{segment.percentage}</Badge>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <h5 className="font-medium text-gray-900 dark:text-white mb-2">
-                      Description
-                    </h5>
-                    <p className="text-gray-700 dark:text-gray-300 text-sm">
-                      {segment.description}
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-4 rounded-xl border border-green-200 dark:border-green-800 shadow-sm">
-                      <div className="flex items-center mb-2">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center mr-2">
-                          <CheckCircle className="h-4 w-4 text-white" />
-                        </div>
-                        <h5 className="font-medium text-green-800 dark:text-green-300">
-                          Attractiveness
-                        </h5>
-                      </div>
-                      <p className="text-green-700 dark:text-green-300 text-sm">
-                        {segment.attractiveness_factors}
-                      </p>
+            {data.segmentation
+              ?.filter((segment: any) => {
+                if (!segment.percentage) return true; // Keep topics without percentage
+                const value = parseFloat(segment.percentage.replace("%", ""));
+                return value >= 1; // Only keep topics with 1% or higher
+              })
+              .map((segment, index) => (
+                <div
+                  key={index}
+                  className="border-l-4 border-gradient-primary pl-6 bg-gray-50/50 dark:bg-gray-800/50 rounded-r-lg p-6 hover:bg-gray-100/50 dark:hover:bg-gray-700/50 transition-colors"
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-semibold text-lg text-gray-900 dark:text-white">
+                        {segment.segment}
+                      </h4>
+                      {segment.temporal_trend && (
+                        <TrendIndicator
+                          status={segment.temporal_trend.status}
+                          timeline={segment.temporal_trend.timeline}
+                          size="sm"
+                        />
+                      )}
                     </div>
-
-                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-4 rounded-xl border border-blue-200 dark:border-blue-800 shadow-sm">
-                      <div className="flex items-center mb-2">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center mr-2">
-                          <Lightbulb className="h-4 w-4 text-white" />
-                        </div>
-                        <h5 className="font-medium text-blue-800 dark:text-blue-300">
-                          Opportunities
-                        </h5>
-                      </div>
-                      <p className="text-blue-700 dark:text-blue-300 text-sm">
-                        {segment.opportunities}
-                      </p>
-                    </div>
-
-                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-4 rounded-xl border border-orange-200 dark:border-orange-800 shadow-sm">
-                      <div className="flex items-center mb-2">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-orange-500 to-red-500 flex items-center justify-center mr-2">
-                          <AlertCircle className="h-4 w-4 text-white" />
-                        </div>
-                        <h5 className="font-medium text-orange-800 dark:text-orange-300">
-                          Challenges
-                        </h5>
-                      </div>
-                      <p className="text-orange-700 dark:text-orange-300 text-sm">
-                        {segment.challenges}
-                      </p>
+                    <div className="flex items-center gap-2">
+                      {segment.temporal_trend && (
+                        <TemporalBadge
+                          status={segment.temporal_trend.status}
+                          size="sm"
+                        />
+                      )}
+                      <BadgeTooltip
+                        type="percentage"
+                        value={segment.percentage}
+                      >
+                        <Badge variant="info" size="sm">
+                          {segment.percentage}
+                        </Badge>
+                      </BadgeTooltip>
                     </div>
                   </div>
 
-                  {/* Example Quote */}
-                  {segment.example_quote && (
-                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-                      <h5 className="font-medium text-gray-900 dark:text-white mb-2 flex items-center">
-                        <MessageSquare className="h-4 w-4 mr-2 text-blue-600 dark:text-blue-400" />
-                        Customer Quote
+                  <div className="space-y-4">
+                    <div>
+                      <h5 className="font-medium text-gray-900 dark:text-white mb-2">
+                        Description
                       </h5>
-                      <p className="text-gray-700 dark:text-gray-300 text-sm italic">
-                        "{segment.example_quote}"
+                      <p className="text-gray-700 dark:text-gray-300 text-sm">
+                        {segment.description}
                       </p>
                     </div>
-                  )}
 
-                  {/* Buyer Persona */}
-                  {segment.buyer_persona && (
-                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 p-6 rounded-xl border border-purple-200 dark:border-purple-800 shadow-sm">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-center">
-                          {segment.buyer_persona.image_url ? (
-                            <img
-                              src={segment.buyer_persona.image_url}
-                              alt={segment.buyer_persona.persona_name}
-                              className="w-12 h-12 rounded-full object-cover mr-4 border-2 border-white shadow-sm"
-                            />
-                          ) : (
-                            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center mr-4 shadow-sm">
-                              <User className="h-6 w-6 text-white" />
-                            </div>
-                          )}
-                          <div>
-                            <h5 className="font-semibold text-purple-900 dark:text-purple-100">
-                              {segment.buyer_persona.persona_name}
-                            </h5>
-                            <p className="text-sm text-purple-700 dark:text-purple-300">
-                              Represents{" "}
-                              {segment.buyer_persona.representation_percentage}{" "}
-                              of customers
-                            </p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-4 rounded-xl border border-green-200 dark:border-green-800 shadow-sm">
+                        <div className="flex items-center mb-2">
+                          <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center mr-2">
+                            <CheckCircle className="h-4 w-4 text-white" />
                           </div>
+                          <h5 className="font-medium text-green-800 dark:text-green-300">
+                            Attractiveness
+                          </h5>
                         </div>
-                        <div className="flex gap-2">
-                          <Button
-                            onClick={() =>
-                              openPersonaDialog(segment.buyer_persona)
-                            }
-                            variant="gradient"
-                            size="sm"
-                          >
-                            <Eye className="h-4 w-4 mr-2" />
-                            View
-                          </Button>
-                          {brandId && productId && (
+                        <p className="text-green-700 dark:text-green-300 text-sm">
+                          {segment.attractiveness_factors}
+                        </p>
+                      </div>
+
+                      <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-4 rounded-xl border border-blue-200 dark:border-blue-800 shadow-sm">
+                        <div className="flex items-center mb-2">
+                          <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center mr-2">
+                            <Lightbulb className="h-4 w-4 text-white" />
+                          </div>
+                          <h5 className="font-medium text-blue-800 dark:text-blue-300">
+                            Opportunities
+                          </h5>
+                        </div>
+                        <p className="text-blue-700 dark:text-blue-300 text-sm">
+                          {segment.opportunities}
+                        </p>
+                      </div>
+
+                      <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-4 rounded-xl border border-orange-200 dark:border-orange-800 shadow-sm">
+                        <div className="flex items-center mb-2">
+                          <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-orange-500 to-red-500 flex items-center justify-center mr-2">
+                            <AlertCircle className="h-4 w-4 text-white" />
+                          </div>
+                          <h5 className="font-medium text-orange-800 dark:text-orange-300">
+                            Challenges
+                          </h5>
+                        </div>
+                        <p className="text-orange-700 dark:text-orange-300 text-sm">
+                          {segment.challenges}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Example Quote */}
+                    {segment.example_quote && (
+                      <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h5 className="font-medium text-gray-900 dark:text-white mb-2 flex items-center">
+                          <MessageSquare className="h-4 w-4 mr-2 text-blue-600 dark:text-blue-400" />
+                          Customer Quote
+                        </h5>
+                        <p className="text-gray-700 dark:text-gray-300 text-sm italic">
+                          "{segment.example_quote}"
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Buyer Persona */}
+                    {segment.buyer_persona && (
+                      <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 p-6 rounded-xl border border-purple-200 dark:border-purple-800 shadow-sm">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex items-center">
+                            {segment.buyer_persona.image_url ? (
+                              <img
+                                src={segment.buyer_persona.image_url}
+                                alt={segment.buyer_persona.persona_name}
+                                className="w-12 h-12 rounded-full object-cover mr-4 border-2 border-white shadow-sm"
+                              />
+                            ) : (
+                              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center mr-4 shadow-sm">
+                                <User className="h-6 w-6 text-white" />
+                              </div>
+                            )}
+                            <div>
+                              <h5 className="font-semibold text-purple-900 dark:text-purple-100">
+                                {segment.buyer_persona.persona_name}
+                              </h5>
+                              <p className="text-sm text-purple-700 dark:text-purple-300">
+                                Represents {segment.percentage} of customers
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
                             <Button
                               onClick={() =>
-                                openPersonaChat(segment.buyer_persona)
+                                openPersonaDialog(
+                                  segment.buyer_persona,
+                                  segment.percentage,
+                                )
                               }
-                              variant="outline"
+                              variant="gradient"
                               size="sm"
                             >
-                              <MessageCircle className="h-4 w-4 mr-2" />
-                              Chat
+                              <Eye className="h-4 w-4 mr-2" />
+                              View
                             </Button>
-                          )}
+                            {brandId && productId && (
+                              <Button
+                                onClick={() =>
+                                  openPersonaChat(
+                                    segment.buyer_persona,
+                                    segment.percentage,
+                                  )
+                                }
+                                variant="outline"
+                                size="sm"
+                              >
+                                <MessageCircle className="h-4 w-4 mr-2" />
+                                Chat
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                        <p className="text-purple-800 dark:text-purple-200 italic text-sm mb-3">
+                          {segment.buyer_persona.persona_intro}
+                        </p>
+                        <div className="text-sm text-purple-700 dark:text-purple-300 bg-white/50 dark:bg-gray-800/50 rounded-lg p-3">
+                          <span className="font-medium">Quick Profile:</span>{" "}
+                          {segment.buyer_persona.demographics.age},{" "}
+                          {segment.buyer_persona.demographics.job_title}
                         </div>
                       </div>
-                      <p className="text-purple-800 dark:text-purple-200 italic text-sm mb-3">
-                        {segment.buyer_persona.persona_intro}
-                      </p>
-                      <div className="text-sm text-purple-700 dark:text-purple-300 bg-white/50 dark:bg-gray-800/50 rounded-lg p-3">
-                        <span className="font-medium">Quick Profile:</span>{" "}
-                        {segment.buyer_persona.demographics.age},{" "}
-                        {segment.buyer_persona.demographics.job_title}
-                      </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </div>
         </CardContent>
       </Card>
@@ -471,23 +588,28 @@ export function STPAnalysis({
               </h4>
             </TooltipProvider>
             <p className="text-gray-700">
-              <strong>
-                {data.targeting_strategy.approach_description.split(":")[0]}:
-              </strong>
-              {data.targeting_strategy.approach_description.includes(":")
-                ? data.targeting_strategy.approach_description
+              {data.targeting_strategy.approach_description.includes(":") ? (
+                <>
+                  <strong>
+                    {data.targeting_strategy.approach_description.split(":")[0]}
+                    :
+                  </strong>
+                  {data.targeting_strategy.approach_description
                     .split(":")
                     .slice(1)
                     .join(":")
-                    .trim()
-                : data.targeting_strategy.approach_description}
+                    .trim()}
+                </>
+              ) : (
+                data.targeting_strategy.approach_description
+              )}
             </p>
           </div>
 
           <div>
             <h4 className="font-semibold mb-2">Buyer Personas</h4>
-            <p className="text-gray-700">
-              {data.targeting_strategy.buyer_personas}
+            <p className="text-gray-700 dark:text-gray-300">
+              {formatPersonaNames(data.targeting_strategy.buyer_personas)}
             </p>
           </div>
         </CardContent>
@@ -573,7 +695,7 @@ export function STPAnalysis({
               <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
               Key Tactics
             </h4>
-            <div className="text-gray-700">
+            <div className="text-gray-700 dark:text-gray-300">
               {typeof data.implementation_recommendations.key_tactics ===
               "object" ? (
                 <div className="space-y-2">
@@ -586,7 +708,11 @@ export function STPAnalysis({
                   ))}
                 </div>
               ) : (
-                <p>{data.implementation_recommendations.key_tactics}</p>
+                <div className="space-y-2">
+                  {formatNumberedList(
+                    data.implementation_recommendations.key_tactics,
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -596,7 +722,7 @@ export function STPAnalysis({
               <TrendingUp className="h-4 w-4 mr-2 text-blue-600" />
               Monitoring & Measurement
             </h4>
-            <div className="text-gray-700">
+            <div className="text-gray-700 dark:text-gray-300">
               {typeof data.implementation_recommendations
                 .monitoring_suggestions === "object" ? (
                 <div className="space-y-2">
@@ -609,9 +735,11 @@ export function STPAnalysis({
                   ))}
                 </div>
               ) : (
-                <p>
-                  {data.implementation_recommendations.monitoring_suggestions}
-                </p>
+                <div className="space-y-2">
+                  {formatNumberedList(
+                    data.implementation_recommendations.monitoring_suggestions,
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -655,8 +783,7 @@ export function STPAnalysis({
                   {selectedPersona.persona_intro}
                 </p>
                 <Badge variant="secondary" className="mt-2">
-                  Represents {selectedPersona.representation_percentage} of your
-                  customers
+                  Represents {selectedPersona.percentage} of your customers
                 </Badge>
               </div>
 

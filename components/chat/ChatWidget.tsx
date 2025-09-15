@@ -84,7 +84,7 @@ export default function ChatWidget({
         }),
       });
 
-      if (!response.ok) throw new Error("Failed to send message");
+      if (!response.ok) throw new Error("Unable to send message at this time");
 
       // Handle JSON response (non-streaming)
       const data = await response.json();
@@ -138,7 +138,7 @@ export default function ChatWidget({
         `/api/chat/export?conversationId=${conversationId}`,
       );
 
-      if (!response.ok) throw new Error("Failed to export");
+      if (!response.ok) throw new Error("Unable to export conversation");
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -272,6 +272,7 @@ export default function ChatWidget({
                 onNewConversation={handleNewConversation}
                 onShowConversations={() => setShowConversations(true)}
                 hasConversation={!!conversationId}
+                brandId={brandId || ""}
               />
             </>
           )}

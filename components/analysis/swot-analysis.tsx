@@ -18,7 +18,11 @@ import {
   TrendingDown,
   Lightbulb,
   AlertTriangle,
+  Info,
 } from "lucide-react";
+import { TemporalBadge, TrendIndicator } from "@/components/temporal";
+import { TemporalTrend } from "@/lib/types/temporal";
+import { BadgeTooltip } from "./BadgeTooltip";
 
 interface SWOTAnalysisProps {
   analysis?: {
@@ -29,24 +33,28 @@ interface SWOTAnalysisProps {
           percentage: string;
           summary: string;
           example_quote: string;
+          temporal_trend?: TemporalTrend;
         }>;
         weaknesses: Array<{
           topic: string;
           percentage: string;
           summary: string;
           example_quote: string;
+          temporal_trend?: TemporalTrend;
         }>;
         opportunities: Array<{
           topic: string;
           percentage: string;
           summary: string;
           example_quote: string;
+          temporal_trend?: TemporalTrend;
         }>;
         threats: Array<{
           topic: string;
           percentage: string;
           summary: string;
           example_quote: string;
+          temporal_trend?: TemporalTrend;
         }>;
       };
     };
@@ -113,7 +121,7 @@ const getSWOTInfo = (type: string) => {
 export function SWOTAnalysis({ analysis }: SWOTAnalysisProps) {
   if (!analysis || analysis.status !== "completed") {
     return (
-      <Card variant="glass" hover>
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center text-gray-900 dark:text-white">
             <div className="p-2 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 mr-3">
@@ -148,11 +156,11 @@ export function SWOTAnalysis({ analysis }: SWOTAnalysisProps) {
     );
   }
 
-  const data = analysis.data.swot_analysis;
+  const data = analysis.data?.swot_analysis;
 
   if (!data) {
     return (
-      <Card variant="glass" hover>
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center text-gray-900 dark:text-white">
             <div className="p-2 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 mr-3">
@@ -180,7 +188,7 @@ export function SWOTAnalysis({ analysis }: SWOTAnalysisProps) {
   return (
     <div className="space-y-6">
       {/* Charts Overview */}
-      <Card variant="glass" hover>
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center text-gray-900 dark:text-white">
             <div className="p-2 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 mr-3">
@@ -205,7 +213,7 @@ export function SWOTAnalysis({ analysis }: SWOTAnalysisProps) {
           const categoryInfo = getSWOTInfo(category.key);
 
           return (
-            <Card key={category.key} variant="glass" hover>
+            <Card key={category.key}>
               <CardHeader>
                 <CardTitle className="flex items-center text-gray-900 dark:text-white">
                   <div
@@ -219,33 +227,81 @@ export function SWOTAnalysis({ analysis }: SWOTAnalysisProps) {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {category.data.map((item, index) => (
+                  {category.data
+                    .filter((item: any) => {
+                      if (!item.percentage) return true; // Keep topics without percentage
+                      const value = parseFloat(item.percentage.replace('%', ''));
+                      return value >= 1; // Only keep topics with 1% or higher
+                    })
+                    .sort((a: any, b: any) => {
+                      const aValue = parseFloat(a.percentage?.replace('%', '') || '0');
+                      const bValue = parseFloat(b.percentage?.replace('%', '') || '0');
+                      return bValue - aValue;
+                    })
+                    .map((item, index) => (
                     <div
                       key={index}
                       className="border-l-4 border-gradient-primary pl-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-r-lg p-4 hover:bg-gray-100/50 dark:hover:bg-gray-700/50 transition-colors"
                     >
                       <div className="flex items-start justify-between mb-2">
-                        <h4 className="font-semibold text-gray-900 dark:text-white">
-                          {item.topic}
-                        </h4>
-                        <Badge
-                          variant={
-                            category.key === "strengths"
-                              ? "success"
-                              : category.key === "weaknesses"
-                                ? "destructive"
-                                : category.key === "opportunities"
-                                  ? "info"
-                                  : "warning"
-                          }
-                          size="sm"
-                        >
-                          {item.percentage}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-semibold text-gray-900 dark:text-white">
+                            {item.topic}
+                          </h4>
+                          {item.temporal_trend && (
+                            <TrendIndicator 
+                              status={item.temporal_trend.status} 
+                              timeline={item.temporal_trend.timeline}
+                              size="sm"
+                            />
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {item.temporal_trend && (
+                            <BadgeTooltip 
+                              type="trend" 
+                              value={item.temporal_trend.status}
+                              description={item.temporal_trend.trend_summary}
+                            >
+                              <div>
+                                <TemporalBadge 
+                                  status={item.temporal_trend.status} 
+                                  size="sm"
+                                />
+                              </div>
+                            </BadgeTooltip>
+                          )}
+                          <BadgeTooltip type="percentage" value={item.percentage}>
+                            <Badge
+                              variant={
+                                category.key === "strengths"
+                                  ? "success"
+                                  : category.key === "weaknesses"
+                                    ? "destructive"
+                                    : category.key === "opportunities"
+                                      ? "info"
+                                      : "warning"
+                              }
+                              size="sm"
+                            >
+                              {item.percentage || 'Calculating...'}
+                            </Badge>
+                          </BadgeTooltip>
+                        </div>
                       </div>
                       <p className="text-gray-700 dark:text-gray-300 text-sm mb-3">
                         {item.summary}
                       </p>
+                      {item.temporal_trend && item.temporal_trend.trend_summary && (
+                        <div className="text-sm text-gray-600 dark:text-gray-400 mb-3 italic">
+                          <strong>Over Time:</strong> {item.temporal_trend.trend_summary}
+                          {item.temporal_trend.last_mentioned && item.temporal_trend.status === 'RESOLVED' && (
+                            <span className="ml-2 text-green-600 dark:text-green-400">
+                              (Last mentioned: {item.temporal_trend.last_mentioned})
+                            </span>
+                          )}
+                        </div>
+                      )}
                       {item.example_quote && (
                         <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-lg p-3">
                           <div className="flex items-start space-x-2">
@@ -266,10 +322,7 @@ export function SWOTAnalysis({ analysis }: SWOTAnalysisProps) {
       </div>
 
       {/* Strategic Implications */}
-      <Card
-        variant="gradient"
-        className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border-indigo-200 dark:border-indigo-800"
-      >
+      <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border-indigo-200 dark:border-indigo-800">
         <CardHeader>
           <CardTitle className="text-indigo-900 dark:text-indigo-100 flex items-center">
             <div className="p-2 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 mr-3">

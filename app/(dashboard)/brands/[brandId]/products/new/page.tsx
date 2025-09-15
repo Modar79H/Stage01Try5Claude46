@@ -29,6 +29,11 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
+import { CSVConfirmationDialog } from "@/components/csv-confirmation-dialog";
+import type {
+  CSVValidationResult,
+  UserConfirmedMapping,
+} from "@/lib/types/csv-variations";
 
 interface Props {
   params: { brandId: string };
@@ -38,12 +43,9 @@ interface CompetitorFile {
   id: string;
   name: string;
   file: File | null;
-  validationResult?: {
-    isValid: boolean;
-    errors: string[];
-    preview: any[];
-  };
+  validationResult?: CSVValidationResult;
   isValidating?: boolean;
+  confirmedMapping?: UserConfirmedMapping;
 }
 
 export default function NewProductPage({ params }: Props) {
@@ -54,11 +56,14 @@ export default function NewProductPage({ params }: Props) {
   const [error, setError] = useState("");
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isValidating, setIsValidating] = useState(false);
-  const [validationResult, setValidationResult] = useState<{
-    isValid: boolean;
-    errors: string[];
-    preview: any[];
-  } | null>(null);
+  const [validationResult, setValidationResult] =
+    useState<CSVValidationResult | null>(null);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [confirmedMapping, setConfirmedMapping] =
+    useState<UserConfirmedMapping | null>(null);
+  const [pendingCompetitorId, setPendingCompetitorId] = useState<string | null>(
+    null,
+  );
   const router = useRouter();
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
@@ -96,7 +101,11 @@ export default function NewProductPage({ params }: Props) {
       setValidationResult(result);
 
       if (!result.isValid) {
-        setError("CSV validation failed");
+        // Show structural errors (file size, empty headers, etc.)
+        setError(`CSV validation failed: ${result.errors.join(", ")}`);
+      } else {
+        // Always show confirmation dialog for structurally valid CSVs
+        setShowConfirmDialog(true);
       }
     } catch (error) {
       setError("Failed to validate CSV file");
@@ -118,7 +127,45 @@ export default function NewProductPage({ params }: Props) {
   const removeFile = () => {
     setFile(null);
     setValidationResult(null);
+    setConfirmedMapping(null);
     setError("");
+  };
+
+  const handleConfirmMapping = (mapping: UserConfirmedMapping) => {
+    if (pendingCompetitorId) {
+      // Handle competitor confirmation
+      setCompetitors((prev) =>
+        prev.map((c) =>
+          c.id === pendingCompetitorId
+            ? { ...c, confirmedMapping: mapping }
+            : c,
+        ),
+      );
+      setPendingCompetitorId(null);
+    } else {
+      // Handle main product confirmation
+      setConfirmedMapping(mapping);
+    }
+    setShowConfirmDialog(false);
+  };
+
+  const handleCancelConfirmation = () => {
+    if (pendingCompetitorId) {
+      // Reset competitor validation
+      setCompetitors((prev) =>
+        prev.map((c) =>
+          c.id === pendingCompetitorId
+            ? { ...c, file: null, validationResult: undefined }
+            : c,
+        ),
+      );
+      setPendingCompetitorId(null);
+    } else {
+      // Reset main file
+      removeFile();
+    }
+    setShowConfirmDialog(false);
+    setValidationResult(null);
   };
 
   // Competitor management functions
@@ -175,6 +222,13 @@ export default function NewProductPage({ params }: Props) {
             : c,
         ),
       );
+
+      if (result.isValid) {
+        // Always show confirmation dialog for structurally valid competitor CSVs
+        setPendingCompetitorId(id);
+        setValidationResult(result);
+        setShowConfirmDialog(true);
+      }
     } catch (error) {
       console.error("Validation error:", error);
       setCompetitors((prev) =>
@@ -209,9 +263,17 @@ export default function NewProductPage({ params }: Props) {
       formData.append("brandId", params.brandId);
       formData.append("reviewsFile", file);
 
+      // Add confirmed mapping if available
+      if (confirmedMapping) {
+        formData.append("mainProductMapping", JSON.stringify(confirmedMapping));
+      }
+
       // Add competitors if any
       const validCompetitors = competitors.filter(
-        (c) => c.name && c.file && c.validationResult?.isValid,
+        (c) =>
+          c.name &&
+          c.file &&
+          (c.validationResult?.isValid || c.confirmedMapping),
       );
 
       if (validCompetitors.length > 0) {
@@ -219,6 +281,12 @@ export default function NewProductPage({ params }: Props) {
         validCompetitors.forEach((competitor, index) => {
           formData.append(`competitorName_${index}`, competitor.name);
           formData.append(`competitorFile_${index}`, competitor.file!);
+          if (competitor.confirmedMapping) {
+            formData.append(
+              `competitorMapping_${index}`,
+              JSON.stringify(competitor.confirmedMapping),
+            );
+          }
         });
       }
 
@@ -254,17 +322,27 @@ export default function NewProductPage({ params }: Props) {
       return false;
     }
 
+    // Check if main file needs confirmation (always required for valid CSVs)
+    if (file && validationResult?.isValid && !confirmedMapping) {
+      return false;
+    }
+
     // Check competitors
     for (const competitor of competitors) {
-      // If competitor has started to be filled out
       if (competitor.name || competitor.file) {
-        // Must have both name and file
         if (!competitor.name || !competitor.file) {
           return false;
         }
-        // Must have valid CSV
-        if (competitor.file && !competitor.validationResult?.isValid) {
-          return false;
+        if (competitor.file && competitor.validationResult) {
+          if (!competitor.validationResult.isValid) {
+            return false;
+          }
+          if (
+            competitor.validationResult.isValid &&
+            !competitor.confirmedMapping
+          ) {
+            return false;
+          }
         }
       }
     }
@@ -421,7 +499,7 @@ export default function NewProductPage({ params }: Props) {
                   • Must contain a column with review text (e.g., "review",
                   "text", "comment")
                 </li>
-                <li>• Optional: rating column (1-5 stars)</li>
+                <li>• Must contain a rating column (1-5 stars)</li>
                 <li>• Optional: date column</li>
                 <li>
                   • Optional: product variation columns (size, color, etc.)
@@ -528,6 +606,16 @@ export default function NewProductPage({ params }: Props) {
           </Button>
         </div>
       </form>
+
+      {/* CSV Confirmation Dialog */}
+      {showConfirmDialog && validationResult && (
+        <CSVConfirmationDialog
+          open={showConfirmDialog}
+          onClose={handleCancelConfirmation}
+          validationResult={validationResult}
+          onConfirm={handleConfirmMapping}
+        />
+      )}
     </div>
   );
 }

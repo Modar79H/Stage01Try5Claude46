@@ -1,4 +1,4 @@
-// app/(dashboard)/products/[productId]/page.tsx - Updated with Delete Button
+// app/(dashboard)/products/[productId]/page.tsx - Updated with Unified Tabs
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
@@ -13,22 +13,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { CollapsibleAnalysis } from "@/components/collapsible-analysis";
 import { Progress } from "@/components/ui/progress";
-import { AnalysisStatus } from "@/components/analysis-status";
-import { ProductDescription } from "@/components/analysis/product-description";
-import { VOCCombined } from "@/components/analysis/voc-combined";
-import { JTBDAnalysis } from "@/components/analysis/jtbd-analysis";
-import { STPAnalysis } from "@/components/analysis/stp-analysis";
-import { SWOTAnalysis } from "@/components/analysis/swot-analysis";
-import { CustomerJourney } from "@/components/analysis/customer-journey";
-import { SmartCompetitionAnalysis } from "@/components/analysis/smart-competition-analysis";
-import { StrategicRecommendations } from "@/components/analysis/strategic-recommendations";
+import { UnifiedAnalysisTabs } from "@/components/unified-analysis-tabs";
 import { ProductActions } from "@/components/product-actions";
-import { MarketingStrategist } from "@/components/marketing/MarketingStrategist";
-import { ProductImprovementStrategist } from "@/components/improvement/ProductImprovementStrategist";
-import { AmazonPlatformAdviser } from "@/components/amazon/AmazonPlatformAdviser";
-import { formatDate } from "@/lib/utils";
+import { FormattedDate } from "@/components/ui/FormattedDate";
 import {
   ArrowLeft,
   Package,
@@ -40,6 +28,9 @@ import {
   Trash2,
   AlertTriangle,
 } from "lucide-react";
+import { MarketingStrategist } from "@/components/marketing/MarketingStrategist";
+import { ProductImprovementStrategist } from "@/components/improvement/ProductImprovementStrategist";
+import { AmazonPlatformAdviser } from "@/components/amazon/AmazonPlatformAdviser";
 
 async function getProduct(productId: string, userId: string) {
   const product = await prisma.product.findUnique({
@@ -84,12 +75,41 @@ export default async function ProductAnalysisPage({
   );
 
   const hasCompetitors = product.competitors.length > 0;
-  const expectedAnalyses = hasCompetitors ? 10 : 9; // 10 includes smart_competition
-  const completedAnalyses = product.analyses.filter(
-    (a) => a.status === "completed",
-  ).length;
-  const completionPercentage = Math.round(
-    (completedAnalyses / expectedAnalyses) * 100,
+
+  // VOC sub-analyses that should be counted as one
+  const vocSubAnalyses = [
+    "voice_of_customer",
+    "sentiment",
+    "rating_analysis",
+    "four_w_matrix",
+  ];
+
+  // Internal analysis types that should not be counted in UI
+  const internalAnalyses = ["personas", "competition"];
+
+  // Count analyses, treating VOC group as one and excluding internal types
+  const getUniqueAnalysisCount = (analyses: any[]) => {
+    // Filter out internal analysis types
+    const visibleAnalyses = analyses.filter(
+      (a) => !internalAnalyses.includes(a.type),
+    );
+
+    const vocCompleted = visibleAnalyses.some(
+      (a) => vocSubAnalyses.includes(a.type) && a.status === "completed",
+    );
+    const nonVocCompleted = visibleAnalyses.filter(
+      (a) => !vocSubAnalyses.includes(a.type) && a.status === "completed",
+    ).length;
+    return nonVocCompleted + (vocCompleted ? 1 : 0);
+  };
+
+  const expectedAnalyses = hasCompetitors ? 8 : 7; // 8 with competition, 7 without
+  const completedAnalyses = getUniqueAnalysisCount(product.analyses);
+
+  // Cap completion percentage at 100%
+  const completionPercentage = Math.min(
+    Math.round((completedAnalyses / expectedAnalyses) * 100),
+    100,
   );
 
   const hasAnalysisData = completedAnalyses > 0;
@@ -125,20 +145,15 @@ export default async function ProductAnalysisPage({
                   {product.brand.name}
                 </span>
                 <span>{product.reviewsCount.toLocaleString()} reviews</span>
-                <span>Created {formatDate(product.createdAt)}</span>
+                <span>
+                  Created <FormattedDate date={product.createdAt} />
+                </span>
               </div>
             </div>
           </div>
 
           {/* Action Buttons */}
           <div className="flex items-center space-x-2">
-            <Button variant="outline" size="sm" asChild>
-              <Link href={`/products/${product.id}/competitors`}>
-                <Users className="h-4 w-4 mr-2" />
-                Manage Competitors
-              </Link>
-            </Button>
-
             {hasAnalysisData && (
               <Button variant="outline" size="sm" asChild>
                 <Link href={`/products/${product.id}/export`}>
@@ -153,14 +168,14 @@ export default async function ProductAnalysisPage({
           </div>
         </div>
 
-        {/* Status Card */}
+        {/* Analysis Status and Progress Card */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="flex items-center">
                   <BarChart3 className="h-5 w-5 mr-2" />
-                  Analysis Status
+                  Analysis Progress
                 </CardTitle>
                 <CardDescription>
                   {completedAnalyses} of {expectedAnalyses} analyses completed
@@ -175,14 +190,7 @@ export default async function ProductAnalysisPage({
             </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <Progress value={completionPercentage} className="w-full" />
-              <AnalysisStatus
-                productId={product.id}
-                analyses={product.analyses}
-                hasCompetitors={hasCompetitors}
-              />
-            </div>
+            <Progress value={completionPercentage} className="w-full" />
           </CardContent>
         </Card>
 
@@ -204,94 +212,55 @@ export default async function ProductAnalysisPage({
           </Card>
         )}
 
-        {/* Analysis Sections - Only show if we have data */}
+        {/* Unified Analysis Tabs */}
+        <Card>
+          <CardContent className="pt-6">
+            <UnifiedAnalysisTabs
+              productId={product.id}
+              brandId={product.brandId}
+              productName={product.name}
+              analyses={analyses}
+              hasCompetitors={hasCompetitors}
+            />
+          </CardContent>
+        </Card>
+
+        {/* AI Strategic Advisors - Product Level */}
         {hasAnalysisData && (
-          <div className="space-y-4">
-            <CollapsibleAnalysis title="Product Description" defaultOpen={true}>
-              <ProductDescription analysis={analyses.product_description} />
-            </CollapsibleAnalysis>
+          <div className="space-y-6">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+                🤖 AI Strategic Advisors
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400">
+                Get strategic insights and recommendations for {product.name}
+              </p>
+            </div>
 
-            <CollapsibleAnalysis
-              title="VOC (Voice of Customer)"
-              defaultOpen={false}
-            >
-              <VOCCombined
-                analyses={{
-                  voice_of_customer: analyses.voice_of_customer,
-                  rating_analysis: analyses.rating_analysis,
-                  sentiment: analyses.sentiment,
-                  four_w_matrix: analyses.four_w_matrix,
-                }}
-              />
-            </CollapsibleAnalysis>
-
-            <CollapsibleAnalysis title="Jobs to be Done" defaultOpen={false}>
-              <JTBDAnalysis analysis={analyses.jtbd} />
-            </CollapsibleAnalysis>
-
-            <CollapsibleAnalysis title="STP Analysis" defaultOpen={false}>
-              <STPAnalysis
-                analysis={analyses.stp}
-                brandId={product.brandId}
+            <div className="grid grid-cols-1 gap-8">
+              <MarketingStrategist
+                brandId={product.brand.id}
                 productId={product.id}
+                brandName={product.brand.name}
                 productName={product.name}
               />
-            </CollapsibleAnalysis>
 
-            <CollapsibleAnalysis title="SWOT Analysis" defaultOpen={false}>
-              <SWOTAnalysis analysis={analyses.swot} />
-            </CollapsibleAnalysis>
-
-            <CollapsibleAnalysis title="Customer Journey" defaultOpen={false}>
-              <CustomerJourney analysis={analyses.customer_journey} />
-            </CollapsibleAnalysis>
-
-
-            {hasCompetitors && (
-              <CollapsibleAnalysis
-                title="🧠 Smart Competition Analysis"
-                defaultOpen={false}
-              >
-                <SmartCompetitionAnalysis
-                  analysis={analyses.smart_competition}
-                />
-              </CollapsibleAnalysis>
-            )}
-
-            <CollapsibleAnalysis
-              title="Strategic Recommendations"
-              defaultOpen={false}
-            >
-              <StrategicRecommendations
-                analysis={analyses.strategic_recommendations}
+              <ProductImprovementStrategist
+                brandId={product.brand.id}
+                productId={product.id}
+                brandName={product.brand.name}
+                productName={product.name}
               />
-            </CollapsibleAnalysis>
+
+              <AmazonPlatformAdviser
+                brandId={product.brand.id}
+                productId={product.id}
+                brandName={product.brand.name}
+                productName={product.name}
+              />
+            </div>
           </div>
         )}
-
-        {/* AI Strategist Chatbots Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <MarketingStrategist
-            brandId={product.brandId}
-            productId={product.id}
-            brandName={product.brand.name}
-            productName={product.name}
-          />
-
-          <ProductImprovementStrategist
-            brandId={product.brandId}
-            productId={product.id}
-            brandName={product.brand.name}
-            productName={product.name}
-          />
-
-          <AmazonPlatformAdviser
-            brandId={product.brandId}
-            productId={product.id}
-            brandName={product.brand.name}
-            productName={product.name}
-          />
-        </div>
       </div>
     </ProductPageWrapper>
   );

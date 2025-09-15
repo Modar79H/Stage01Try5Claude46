@@ -2,6 +2,7 @@
 import { prisma } from "../prisma";
 import { pineconeService } from "./pinecone";
 import { openaiService } from "./openai";
+// Background jobs removed - using simplified product-only system
 import { sleep } from "../utils";
 import fs from "fs/promises";
 import path from "path";
@@ -18,16 +19,15 @@ const ANALYSIS_TYPES = [
   "product_description",
   "sentiment",
   "voice_of_customer",
-  "rating_analysis",
+  // "rating_analysis", // DEACTIVATED to reduce token consumption
   "four_w_matrix",
   "jtbd",
   "stp",
-  "swot",
+  "swot", // RE-ACTIVATED
   "customer_journey",
-  "personas",
-  "competition",
   "smart_competition", // Runs after required analyses are complete
   "strategic_recommendations",
+  "percentage_calculation", // Calculate actual percentages based on all reviews
 ] as const;
 
 type AnalysisType = (typeof ANALYSIS_TYPES)[number];
@@ -97,19 +97,27 @@ class AnalysisProcessingService {
 
       // Verify user owns this product
       if (product.brand.userId !== userId) {
-        throw new Error("Unauthorized: Product does not belong to user");
+        throw new Error("You don't have access to this product");
       }
 
       const hasCompetitors = product.competitors.length > 0;
       const analysesToRun = hasCompetitors
         ? ANALYSIS_TYPES
-        : ANALYSIS_TYPES.filter((t) => t !== "competition");
+        : ANALYSIS_TYPES.filter((t) => t !== "smart_competition");
+
+      // Start analyses timing
+      const analysesStartTime = Date.now();
+      console.log(`⏱️ [${new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })}] Starting analyses process (${analysesToRun.length} analyses to run)...`);
 
       // Process each analysis type
       for (let i = 0; i < analysesToRun.length; i++) {
         const analysisType = analysesToRun[i];
 
         try {
+          // Log individual analysis timing
+          const analysisStartTime = Date.now();
+          console.log(`⏱️ [${new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })}] Starting ${analysisType} analysis...`);
+          
           this.updateProgress(
             productId,
             `Processing ${analysisType}`,
@@ -120,9 +128,13 @@ class AnalysisProcessingService {
           // Get reviews with product-specific context
           let reviews = [];
 
-          // For smart competition analysis, we don't need main product reviews
-          // The analysis will be based entirely on competitor data
-          if (analysisType !== "smart_competition") {
+          // For smart competition and percentage_calculation, we don't need main product reviews
+          // Smart competition is based on competitor data
+          // percentage_calculation fetches all reviews internally
+          if (
+            analysisType !== "smart_competition" &&
+            analysisType !== "percentage_calculation"
+          ) {
             reviews = await pineconeService.getReviewsForAnalysis(
               productId,
               analysisType,
@@ -144,6 +156,70 @@ class AnalysisProcessingService {
           let competitorReviews = undefined;
           let existingAnalyses = undefined;
 
+          // Special handling for percentage_calculation - it needs all existing analyses
+          if (analysisType === "percentage_calculation") {
+            // Get all existing analysis results to update their percentages
+            existingAnalyses = await this.getAllExistingAnalyses(productId);
+
+            // Skip if the required analyses haven't been completed yet
+            const requiredForPercentage = [
+              "sentiment",
+              "jtbd",
+              "stp",
+              "swot",
+              "four_w_matrix",
+              "customer_journey",
+            ];
+            const availableForPercentage = requiredForPercentage.filter(
+              (type) => existingAnalyses[type],
+            );
+
+            if (availableForPercentage.length === 0) {
+              console.log(
+                `Skipping percentage_calculation - no analyses available yet`,
+              );
+              continue;
+            }
+
+            console.log(
+              `Running percentage_calculation for ${availableForPercentage.length} analyses`,
+            );
+
+            // percentage_calculation doesn't need reviews passed since it fetches all
+            reviews = [];
+          }
+
+          // Special handling for strategic recommendations - it needs all existing analyses
+          if (analysisType === "strategic_recommendations") {
+            // Get all existing analysis results to synthesize
+            existingAnalyses = await this.getAllExistingAnalyses(productId);
+
+            // Add product variations for strategic recommendations
+            existingAnalyses.productVariations = product.variations;
+
+            // Skip if not enough analyses are available
+            const availableAnalyses = Object.keys(existingAnalyses).filter(
+              (type) =>
+                existingAnalyses[type] &&
+                type !== "personas" &&
+                type !== "competition",
+            );
+
+            if (availableAnalyses.length < 5) {
+              console.log(
+                `Skipping strategic_recommendations - only ${availableAnalyses.length} analyses available (need at least 5)`,
+              );
+              continue;
+            }
+
+            console.log(
+              `Running strategic_recommendations with ${availableAnalyses.length} existing analyses`,
+            );
+
+            // For strategic recommendations, we don't need many reviews since we're using analyses
+            reviews = reviews.slice(0, 10); // Just pass a few for context if needed
+          }
+
           // Special handling for smart competition analysis
           if (analysisType === "smart_competition") {
             // Skip if no competitors
@@ -159,7 +235,7 @@ class AnalysisProcessingService {
             // Skip if required analyses are missing
             const requiredAnalyses = [
               "product_description",
-              "swot",
+              "swot", // RE-ADDED as required for Smart Competition Analysis
               "stp",
               "customer_journey",
             ];
@@ -183,6 +259,9 @@ class AnalysisProcessingService {
 
             // Pass competitor analyses to the smart competition analysis
             existingAnalyses.competitorAnalyses = competitorAnalyses;
+
+            // Add main product variations for comparison
+            existingAnalyses.productVariations = product.variations;
           }
 
           // Perform the analysis
@@ -191,6 +270,12 @@ class AnalysisProcessingService {
             reviews,
             competitorReviews,
             existingAnalyses,
+            product.variations as
+              | Record<string, { count: number; description?: string }>
+              | undefined,
+            productId,
+            userId,
+            product.brand.id,
           );
 
           if (result.status === "completed") {
@@ -217,6 +302,19 @@ class AnalysisProcessingService {
             });
 
             completedAnalyses.push(analysisType);
+            
+            // Log individual analysis completion
+            const analysisEndTime = Date.now();
+            const analysisDuration = analysisEndTime - analysisStartTime;
+            console.log(`⏱️ [${new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })}] ${analysisType} analysis completed in ${(analysisDuration / 1000).toFixed(2)} seconds`);
+
+            // Trigger background job for knowledge base generation
+            try {
+              // Background job processing removed
+            } catch (error) {
+              console.error("Error triggering background job:", error);
+              // Don't fail the analysis if background job fails
+            }
 
             // Generate persona images for STP analysis
             if (analysisType === "stp" && result.data.stp_analysis) {
@@ -257,11 +355,11 @@ class AnalysisProcessingService {
             });
           }
 
-          // Rate limiting - wait between analyses
+          // Wait between analyses for optimal processing
           if (i < analysesToRun.length - 1) {
             this.updateProgress(
               productId,
-              "Rate limiting...",
+              "Optimizing analysis quality...",
               i + 1,
               analysesToRun.length,
             );
@@ -280,6 +378,12 @@ class AnalysisProcessingService {
         where: { id: productId },
         data: { isProcessing: false },
       });
+
+      // End analyses timing
+      const analysesEndTime = Date.now();
+      const analysesDuration = analysesEndTime - analysesStartTime;
+      console.log(`⏱️ [${new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })}] All analyses completed in ${(analysesDuration / 1000).toFixed(2)} seconds`);
+      console.log(`📊 Analyses Summary: ${completedAnalyses.length} successful, ${errors.length} failed`);
 
       this.updateProgress(
         productId,
@@ -344,7 +448,7 @@ class AnalysisProcessingService {
 
       // Verify user owns this product
       if (product.brand.userId !== userId) {
-        throw new Error("Unauthorized: Product does not belong to user");
+        throw new Error("You don't have access to this product");
       }
 
       // UPDATED: Get reviews with product-specific context
@@ -366,11 +470,24 @@ class AnalysisProcessingService {
       // Get competitor reviews if needed
       let competitorReviews = undefined;
 
+      // Get product with variations
+      const productVariations = await prisma.product.findUnique({
+        where: { id: productId },
+        select: { variations: true },
+      });
+
       // Perform the analysis
       const result = await openaiService.performAnalysis(
         analysisType,
         reviews,
         competitorReviews,
+        undefined,
+        productVariations?.variations as
+          | Record<string, { count: number; description?: string }>
+          | undefined,
+        productId,
+        userId,
+        product.brand.id,
       );
 
       if (result.status === "completed") {
@@ -469,8 +586,13 @@ class AnalysisProcessingService {
           const imageUrl =
             await openaiService.generatePersonaImage(description);
 
-          if (imageUrl) {
+          if (
+            imageUrl &&
+            typeof imageUrl === "string" &&
+            imageUrl.startsWith("http")
+          ) {
             try {
+              console.log("Downloading persona image from URL:", imageUrl);
               // Download the image
               const response = await fetch(imageUrl);
               if (!response.ok) throw new Error("Failed to download image");
@@ -502,10 +624,21 @@ class AnalysisProcessingService {
                 "Error downloading/saving STP persona image:",
                 downloadError,
               );
-              // Fall back to OpenAI URL if download fails
-              persona.image_url = imageUrl;
-              updateNeeded = true;
+              // Fall back to original URL if download fails (if it's a valid URL)
+              if (
+                imageUrl &&
+                typeof imageUrl === "string" &&
+                imageUrl.startsWith("http")
+              ) {
+                persona.image_url = imageUrl;
+                updateNeeded = true;
+              }
             }
+          } else if (imageUrl) {
+            console.error(
+              "Invalid image URL received from image generation:",
+              imageUrl,
+            );
           }
         }
       }
@@ -542,11 +675,11 @@ class AnalysisProcessingService {
       four_w_matrix: 80,
       jtbd: 100,
       stp: 150,
-      swot: 100,
+      // swot: 100, // DEACTIVATED
       customer_journey: 120,
       smart_competition: 200,
-      strategic_recommendations: 100,
-      rating_analysis: 150,
+      strategic_recommendations: 10, // Uses existing analyses, not reviews
+      // rating_analysis: 150, // DEACTIVATED
     };
 
     const baseCount = baseReviewCounts[analysisType] || 100;
@@ -587,12 +720,51 @@ class AnalysisProcessingService {
   }
 
   // Get existing analyses needed for smart competition comparison
+  private async getAllExistingAnalyses(
+    productId: string,
+  ): Promise<Record<string, any>> {
+    const allAnalysisTypes = [
+      "product_description",
+      "sentiment",
+      "voice_of_customer",
+      // "rating_analysis", // DEACTIVATED to reduce token consumption
+      "four_w_matrix",
+      "jtbd",
+      "stp",
+      "swot", // RE-ACTIVATED
+      "customer_journey",
+      "smart_competition",
+    ];
+    const existingAnalyses: Record<string, any> = {};
+
+    for (const analysisType of allAnalysisTypes) {
+      try {
+        const analysis = await prisma.analysis.findUnique({
+          where: {
+            productId_type: {
+              productId,
+              type: analysisType as any,
+            },
+          },
+        });
+
+        if (analysis && analysis.status === "completed" && analysis.data) {
+          existingAnalyses[analysisType] = analysis.data;
+        }
+      } catch (error) {
+        console.warn(`Could not fetch ${analysisType} analysis:`, error);
+      }
+    }
+
+    return existingAnalyses;
+  }
+
   private async getExistingAnalysesForComparison(
     productId: string,
   ): Promise<Record<string, any>> {
     const requiredAnalyses = [
       "product_description",
-      "swot",
+      "swot", // RE-ADDED as required for Smart Competition Analysis
       "stp",
       "customer_journey",
     ];
@@ -681,6 +853,15 @@ class AnalysisProcessingService {
           const productDescResult = await openaiService.performAnalysis(
             "product_description",
             productDescReviews,
+            undefined,
+            undefined,
+            competitor.variations as
+              | Record<string, { count: number; description?: string }>
+              | undefined, // Pass competitor variations
+            product.id,
+            userId,
+            brandId,
+            competitorName, // Pass competitor name for logging
           );
           if (productDescResult.status === "completed") {
             competitorAnalyses[competitorId].product_description =
@@ -725,7 +906,12 @@ class AnalysisProcessingService {
 
         if (swotReviews.length > 0) {
           const swotResult =
-            await openaiService.performCompetitorSWOTAnalysis(swotReviews);
+            await openaiService.performCompetitorSWOTAnalysis(
+              swotReviews,
+              competitor.variations as
+                | Record<string, { count: number; description?: string }>
+                | undefined,
+            );
           if (swotResult.status === "completed") {
             competitorAnalyses[competitorId].swot = swotResult.data;
             console.log(`✅ SWOT analysis completed for ${competitorName}`);
@@ -761,6 +947,15 @@ class AnalysisProcessingService {
         const segmentationResult = await openaiService.performAnalysis(
           "stp",
           segmentationReviews,
+          undefined,
+          undefined,
+          competitor.variations as
+            | Record<string, { count: number; description?: string }>
+            | undefined, // Pass competitor variations
+          product.id,
+          userId,
+          brandId,
+          competitor.name, // Pass competitor name for logging
         );
         if (segmentationResult.status === "completed") {
           competitorAnalyses[competitorId].stp = segmentationResult.data;
@@ -784,6 +979,15 @@ class AnalysisProcessingService {
         const journeyResult = await openaiService.performAnalysis(
           "customer_journey",
           journeyReviews,
+          undefined,
+          undefined,
+          competitor.variations as
+            | Record<string, { count: number; description?: string }>
+            | undefined, // Pass competitor variations
+          product.id,
+          userId,
+          brandId,
+          competitor.name, // Pass competitor name for logging
         );
         if (journeyResult.status === "completed") {
           competitorAnalyses[competitorId].customer_journey =
@@ -794,6 +998,7 @@ class AnalysisProcessingService {
       // Add competitor metadata
       competitorAnalyses[competitorId].name = competitorName;
       competitorAnalyses[competitorId].id = competitorId;
+      competitorAnalyses[competitorId].variations = competitor.variations || {};
 
       console.log(
         `🎯 Completed analyses for ${competitorName}:`,
@@ -840,13 +1045,13 @@ class AnalysisProcessingService {
 
     // Verify user owns this product
     if (product.brand.userId !== userId) {
-      throw new Error("Unauthorized: Product does not belong to user");
+      throw new Error("You don't have access to this product");
     }
 
     const hasCompetitors = product.competitors.length > 0;
     const expectedAnalyses = hasCompetitors
       ? ANALYSIS_TYPES
-      : ANALYSIS_TYPES.filter((t) => t !== "competition");
+      : ANALYSIS_TYPES.filter((t) => t !== "smart_competition");
 
     const completedAnalyses = product.analyses
       .filter((a) => a.status === "completed")

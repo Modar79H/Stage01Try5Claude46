@@ -5,12 +5,44 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatDate(date: Date | string): string {
-  return new Intl.DateTimeFormat("en-US", {
+export function formatDate(date: Date | string, timezone?: string): string {
+  const options: Intl.DateTimeFormatOptions = {
     year: "numeric",
     month: "short",
     day: "numeric",
-  }).format(new Date(date));
+  };
+
+  if (timezone) {
+    options.timeZone = timezone;
+  }
+
+  return new Intl.DateTimeFormat("en-US", options).format(new Date(date));
+}
+
+export function formatDateTime(date: Date | string, timezone?: string): string {
+  const options: Intl.DateTimeFormatOptions = {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+  };
+
+  if (timezone) {
+    options.timeZone = timezone;
+  }
+
+  return new Intl.DateTimeFormat("en-US", options).format(new Date(date));
+}
+
+export function getUserTimezone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone;
+  } catch (error) {
+    console.error("Error detecting timezone:", error);
+    return "UTC"; // Fallback to UTC
+  }
 }
 
 export function formatPercentage(value: number): string {

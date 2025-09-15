@@ -11,6 +11,13 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { SentimentChart } from "@/components/charts/sentiment-chart";
 import { ThumbsUp, ThumbsDown, AlertCircle, Quote } from "lucide-react";
+import {
+  TemporalBadge,
+  TrendIndicator,
+  TemporalTimeline,
+} from "@/components/temporal";
+import { TemporalTrend } from "@/lib/types/temporal";
+import { BadgeTooltip } from "./BadgeTooltip";
 
 interface SentimentAnalysisProps {
   analysis?: {
@@ -22,6 +29,7 @@ interface SentimentAnalysisProps {
           percentage: string;
           summary: string;
           example_quote: string;
+          temporal_trend?: TemporalTrend;
         }>;
         customer_dislikes: Array<{
           theme: string;
@@ -29,6 +37,7 @@ interface SentimentAnalysisProps {
           percentage: string;
           summary: string;
           example_quote: string;
+          temporal_trend?: TemporalTrend;
         }>;
       };
     };
@@ -84,7 +93,7 @@ export function SentimentAnalysis({ analysis }: SentimentAnalysisProps) {
     );
   }
 
-  const data = analysis.data.sentiment_analysis;
+  const data = analysis.data?.sentiment_analysis;
 
   if (
     !data ||
@@ -140,18 +149,69 @@ export function SentimentAnalysis({ analysis }: SentimentAnalysisProps) {
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
-              {data.customer_likes.map((like, index) => (
+              {data.customer_likes
+                .filter((like: any) => {
+                  if (!like.percentage) return true; // Keep topics without percentage
+                  const value = parseFloat(like.percentage.replace('%', ''));
+                  return value >= 1; // Only keep topics with 1% or higher
+                })
+                .sort((a: any, b: any) => {
+                  const aValue = parseFloat(a.percentage?.replace('%', '') || '0');
+                  const bValue = parseFloat(b.percentage?.replace('%', '') || '0');
+                  return bValue - aValue;
+                })
+                .map((like, index) => (
                 <div key={index} className="border-l-4 border-green-500 pl-4">
                   <div className="flex items-start justify-between mb-2">
-                    <h4 className="font-semibold text-lg">{like.theme}</h4>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-semibold text-lg">{like.theme}</h4>
+                      {like.temporal_trend && (
+                        <TrendIndicator
+                          status={like.temporal_trend.status}
+                          timeline={like.temporal_trend.timeline}
+                          size="sm"
+                        />
+                      )}
+                    </div>
                     <div className="flex items-center space-x-2">
-                      <Badge className={getImportanceColor(like.importance)}>
-                        {like.importance}
-                      </Badge>
-                      <Badge variant="outline">{like.percentage}</Badge>
+                      {like.temporal_trend && (
+                        <BadgeTooltip 
+                          type="trend" 
+                          value={like.temporal_trend.status}
+                          description={like.temporal_trend.trend_summary}
+                        >
+                          <TemporalBadge
+                            status={like.temporal_trend.status}
+                            size="sm"
+                          />
+                        </BadgeTooltip>
+                      )}
+                      {like.importance && (
+                        <BadgeTooltip type="importance" value={like.importance}>
+                          <Badge className={getImportanceColor(like.importance)}>
+                            {like.importance}
+                          </Badge>
+                        </BadgeTooltip>
+                      )}
+                      <BadgeTooltip type="percentage" value={like.percentage}>
+                        <Badge variant="outline">{like.percentage}</Badge>
+                      </BadgeTooltip>
                     </div>
                   </div>
                   <p className="text-gray-700 mb-3">{like.summary}</p>
+                  {like.temporal_trend && like.temporal_trend.trend_summary && (
+                    <div className="text-sm text-gray-600 mb-3 italic">
+                      <strong>Over Time:</strong>{" "}
+                      {like.temporal_trend.trend_summary}
+                      {like.temporal_trend.last_mentioned &&
+                        like.temporal_trend.status === "RESOLVED" && (
+                          <span className="ml-2 text-green-600">
+                            (Last mentioned:{" "}
+                            {like.temporal_trend.last_mentioned})
+                          </span>
+                        )}
+                    </div>
+                  )}
                   {like.example_quote && (
                     <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                       <div className="flex items-start space-x-2">
@@ -183,18 +243,72 @@ export function SentimentAnalysis({ analysis }: SentimentAnalysisProps) {
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
-              {data.customer_dislikes.map((dislike, index) => (
+              {data.customer_dislikes
+                .filter((dislike: any) => {
+                  if (!dislike.percentage) return true; // Keep topics without percentage
+                  const value = parseFloat(dislike.percentage.replace('%', ''));
+                  return value >= 1; // Only keep topics with 1% or higher
+                })
+                .sort((a: any, b: any) => {
+                  const aValue = parseFloat(a.percentage?.replace('%', '') || '0');
+                  const bValue = parseFloat(b.percentage?.replace('%', '') || '0');
+                  return bValue - aValue;
+                })
+                .map((dislike, index) => (
                 <div key={index} className="border-l-4 border-red-500 pl-4">
                   <div className="flex items-start justify-between mb-2">
-                    <h4 className="font-semibold text-lg">{dislike.theme}</h4>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-semibold text-lg">{dislike.theme}</h4>
+                      {dislike.temporal_trend && (
+                        <TrendIndicator
+                          status={dislike.temporal_trend.status}
+                          timeline={dislike.temporal_trend.timeline}
+                          size="sm"
+                        />
+                      )}
+                    </div>
                     <div className="flex items-center space-x-2">
-                      <Badge className={getImportanceColor(dislike.importance)}>
-                        {dislike.importance}
-                      </Badge>
-                      <Badge variant="outline">{dislike.percentage}</Badge>
+                      {dislike.temporal_trend && (
+                        <BadgeTooltip 
+                          type="trend" 
+                          value={dislike.temporal_trend.status}
+                          description={dislike.temporal_trend.trend_summary}
+                        >
+                          <div>
+                            <TemporalBadge
+                              status={dislike.temporal_trend.status}
+                              size="sm"
+                            />
+                          </div>
+                        </BadgeTooltip>
+                      )}
+                      {dislike.importance && (
+                        <BadgeTooltip type="importance" value={dislike.importance}>
+                          <Badge className={getImportanceColor(dislike.importance)}>
+                            {dislike.importance}
+                          </Badge>
+                        </BadgeTooltip>
+                      )}
+                      <BadgeTooltip type="percentage" value={dislike.percentage}>
+                        <Badge variant="outline">{dislike.percentage}</Badge>
+                      </BadgeTooltip>
                     </div>
                   </div>
                   <p className="text-gray-700 mb-3">{dislike.summary}</p>
+                  {dislike.temporal_trend &&
+                    dislike.temporal_trend.trend_summary && (
+                      <div className="text-sm text-gray-600 mb-3 italic">
+                        <strong>Over Time:</strong>{" "}
+                        {dislike.temporal_trend.trend_summary}
+                        {dislike.temporal_trend.last_mentioned &&
+                          dislike.temporal_trend.status === "RESOLVED" && (
+                            <span className="ml-2 text-green-600">
+                              (Last mentioned:{" "}
+                              {dislike.temporal_trend.last_mentioned})
+                            </span>
+                          )}
+                      </div>
+                    )}
                   {dislike.example_quote && (
                     <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                       <div className="flex items-start space-x-2">

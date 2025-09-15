@@ -13,10 +13,8 @@ import {
 import { DeleteProductDialog } from "@/components/delete-product-dialog";
 import {
   MoreVertical,
-  RefreshCw,
   Trash2,
   Download,
-  Settings,
   AlertTriangle,
 } from "lucide-react";
 
@@ -50,30 +48,6 @@ export function ProductActions({ product }: ProductActionsProps) {
   const hasCompletedAnalyses = completedAnalyses.length > 0;
   const hasData = product.reviewsCount > 0 || completedAnalyses.length > 0;
 
-  const handleReprocessAnalysis = async () => {
-    try {
-      const response = await fetch(
-        `/api/products/${product.id}/analysis/restart`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        },
-      );
-
-      if (response.ok) {
-        // Refresh the page to show updated status
-        window.location.reload();
-      } else {
-        console.error("Failed to restart analysis");
-        alert("Failed to restart analysis. Please try again.");
-      }
-    } catch (error) {
-      console.error("Error restarting analysis:", error);
-      alert("An error occurred while restarting analysis.");
-    }
-  };
 
   return (
     <>
@@ -85,11 +59,6 @@ export function ProductActions({ product }: ProductActionsProps) {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuItem onClick={handleReprocessAnalysis}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Reprocess Analysis
-          </DropdownMenuItem>
-
           {hasCompletedAnalyses && (
             <DropdownMenuItem
               onClick={() =>
@@ -100,11 +69,6 @@ export function ProductActions({ product }: ProductActionsProps) {
               Export PDF Report
             </DropdownMenuItem>
           )}
-
-          <DropdownMenuItem>
-            <Settings className="h-4 w-4 mr-2" />
-            Product Settings
-          </DropdownMenuItem>
 
           <DropdownMenuSeparator />
 

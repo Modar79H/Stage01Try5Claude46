@@ -5,7 +5,7 @@ import { hash } from "bcryptjs";
 
 export async function POST(request: Request) {
   try {
-    const { name, email, password } = await request.json();
+    const { name, email, password, timezone } = await request.json();
 
     if (!name || !email || !password) {
       return NextResponse.json(
@@ -43,6 +43,7 @@ export async function POST(request: Request) {
         name,
         email,
         password: hashedPassword,
+        timezone: timezone || "UTC", // Default to UTC if not provided
       },
     });
 

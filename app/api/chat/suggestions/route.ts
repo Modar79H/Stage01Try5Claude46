@@ -11,12 +11,10 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const brandId = searchParams.get("brandId");
     const productId = searchParams.get("productId");
 
     const context = await chatbotService.buildContext(
       session.user.id,
-      brandId || undefined,
       productId || undefined,
     );
 

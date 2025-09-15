@@ -4,8 +4,10 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { csvService } from "@/lib/services/csv";
+import { enhancedCSVService } from "@/lib/services/csv-enhanced";
 import { pineconeService } from "@/lib/services/pinecone";
 import { analysisService } from "@/lib/services/analysis";
+import type { UserConfirmedMapping } from "@/lib/types/csv-variations";
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,6 +25,9 @@ export async function POST(request: NextRequest) {
     const competitorCount = parseInt(
       (formData.get("competitorCount") as string) || "0",
     );
+    const mainProductMapping = formData.get("mainProductMapping") as
+      | string
+      | null;
 
     if (!name || !brandId || !reviewsFile) {
       return NextResponse.json(
@@ -38,15 +43,6 @@ export async function POST(request: NextRequest) {
 
     if (!brand || brand.userId !== userId) {
       return NextResponse.json({ error: "Brand not found" }, { status: 404 });
-    }
-
-    // Validate main product CSV file
-    const validation = await csvService.validateCSVStructure(reviewsFile);
-    if (!validation.isValid) {
-      return NextResponse.json(
-        { error: "Invalid CSV file", details: validation.errors },
-        { status: 400 },
-      );
     }
 
     // Check if product name already exists in this brand
@@ -67,7 +63,31 @@ export async function POST(request: NextRequest) {
     }
 
     // Process main product CSV file
-    const csvResult = await csvService.processCSV(reviewsFile);
+    let csvResult;
+    let detectedVariations:
+      | Record<string, { count: number; description?: string }>
+      | undefined;
+
+    if (mainProductMapping) {
+      // Use enhanced CSV service with confirmed mapping
+      const mapping: UserConfirmedMapping = JSON.parse(mainProductMapping);
+      const processResult = await enhancedCSVService.processCSVWithMapping(
+        reviewsFile,
+        mapping,
+      );
+      csvResult = processResult;
+      detectedVariations = processResult.variations;
+    } else {
+      // Use standard CSV service
+      const validation = await csvService.validateCSVStructure(reviewsFile);
+      if (!validation.isValid) {
+        return NextResponse.json(
+          { error: "Invalid CSV file", details: validation.errors },
+          { status: 400 },
+        );
+      }
+      csvResult = await csvService.processCSV(reviewsFile);
+    }
 
     if (csvResult.validRows === 0) {
       return NextResponse.json(
@@ -85,21 +105,36 @@ export async function POST(request: NextRequest) {
     for (let i = 0; i < competitorCount; i++) {
       const competitorName = formData.get(`competitorName_${i}`) as string;
       const competitorFile = formData.get(`competitorFile_${i}`) as File;
+      const competitorMapping = formData.get(`competitorMapping_${i}`) as
+        | string
+        | null;
 
       if (competitorName && competitorFile) {
-        const competitorValidation =
-          await csvService.validateCSVStructure(competitorFile);
-        if (!competitorValidation.isValid) {
-          return NextResponse.json(
-            {
-              error: `Invalid CSV file for competitor ${competitorName}`,
-              details: competitorValidation.errors,
-            },
-            { status: 400 },
+        let competitorCsvResult;
+
+        if (competitorMapping) {
+          // Use enhanced CSV service with confirmed mapping
+          const mapping: UserConfirmedMapping = JSON.parse(competitorMapping);
+          competitorCsvResult = await enhancedCSVService.processCSVWithMapping(
+            competitorFile,
+            mapping,
           );
+        } else {
+          // Use standard CSV service
+          const competitorValidation =
+            await csvService.validateCSVStructure(competitorFile);
+          if (!competitorValidation.isValid) {
+            return NextResponse.json(
+              {
+                error: `Invalid CSV file for competitor ${competitorName}`,
+                details: competitorValidation.errors,
+              },
+              { status: 400 },
+            );
+          }
+          competitorCsvResult = await csvService.processCSV(competitorFile);
         }
 
-        const competitorCsvResult = await csvService.processCSV(competitorFile);
         if (competitorCsvResult.validRows === 0) {
           return NextResponse.json(
             {
@@ -125,6 +160,7 @@ export async function POST(request: NextRequest) {
         brandId,
         reviewsFile: reviewsFile.name,
         reviewsCount: csvResult.validRows,
+        variations: detectedVariations ? detectedVariations : undefined,
         isProcessing: true,
       },
     });
@@ -136,6 +172,7 @@ export async function POST(request: NextRequest) {
       text: review.text,
       rating: review.rating,
       date: review.date,
+      productVariation: review.productVariation,
       metadata: review.metadata,
     }));
 
@@ -144,6 +181,12 @@ export async function POST(request: NextRequest) {
     );
     console.log(
       `👤 User: ${userId}, 🏢 Brand: ${brandId} (${brand.name}), 📦 Product: ${product.id}`,
+    );
+
+    // Start vectorization timing
+    const vectorizationStartTime = Date.now();
+    console.log(
+      `⏱️ [${new Date().toLocaleString("en-US", { timeZone: "America/New_York" })}] Starting vectorization process for ${reviewsData.length} reviews...`,
     );
 
     let pineconeIds: string[];
@@ -160,6 +203,14 @@ export async function POST(request: NextRequest) {
       );
       console.log(
         `✅ Successfully stored reviews. Pinecone IDs count: ${pineconeIds.length}`,
+      );
+
+      // End vectorization timing
+      const vectorizationEndTime = Date.now();
+      const vectorizationDuration =
+        vectorizationEndTime - vectorizationStartTime;
+      console.log(
+        `⏱️ [${new Date().toLocaleString("en-US", { timeZone: "America/New_York" })}] Vectorization completed in ${(vectorizationDuration / 1000).toFixed(2)} seconds`,
       );
     } catch (pineconeError) {
       console.error(`❌ Error storing reviews in Pinecone:`, pineconeError);
@@ -185,6 +236,7 @@ export async function POST(request: NextRequest) {
       originalText: review.text,
       rating: review.rating,
       date: review.date,
+      productVariation: review.productVariation,
       metadata: review.metadata,
       pineconeId: pineconeIds[index],
     }));
@@ -201,6 +253,9 @@ export async function POST(request: NextRequest) {
             name: competitor.name,
             productId: product.id,
             reviewsFile: competitor.file.name,
+            variations: competitor.csvResult.variations
+              ? competitor.csvResult.variations
+              : undefined,
           },
         });
 
@@ -212,12 +267,19 @@ export async function POST(request: NextRequest) {
             text: review.text,
             rating: review.rating,
             date: review.date,
+            productVariation: review.productVariation,
             metadata: review.metadata,
           }),
         );
 
         console.log(
           `🏆 Storing ${competitorReviewsData.length} competitor reviews for: ${competitor.name}`,
+        );
+
+        // Start competitor vectorization timing
+        const competitorVectorizationStart = Date.now();
+        console.log(
+          `⏱️ [${new Date().toLocaleString("en-US", { timeZone: "America/New_York" })}] Starting vectorization for competitor ${competitor.name} (${competitorReviewsData.length} reviews)...`,
         );
 
         let competitorPineconeIds: string[];
@@ -234,6 +296,14 @@ export async function POST(request: NextRequest) {
           );
           console.log(
             `✅ Competitor reviews stored successfully. IDs: ${competitorPineconeIds.length}`,
+          );
+
+          // End competitor vectorization timing
+          const competitorVectorizationEnd = Date.now();
+          const competitorVectorizationDuration =
+            competitorVectorizationEnd - competitorVectorizationStart;
+          console.log(
+            `⏱️ [${new Date().toLocaleString("en-US", { timeZone: "America/New_York" })}] Competitor ${competitor.name} vectorization completed in ${(competitorVectorizationDuration / 1000).toFixed(2)} seconds`,
           );
         } catch (competitorPineconeError) {
           console.error(
@@ -267,6 +337,7 @@ export async function POST(request: NextRequest) {
             originalText: review.text,
             rating: review.rating,
             date: review.date,
+            productVariation: review.productVariation,
             metadata: review.metadata,
             pineconeId: competitorPineconeIds[index],
           }),

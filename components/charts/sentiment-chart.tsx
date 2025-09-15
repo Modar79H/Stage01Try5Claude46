@@ -40,38 +40,37 @@ export function SentimentChart({ likes, dislikes }: SentimentChartProps) {
   const allThemes = [
     ...likes.map((item) => ({
       theme: item.theme,
-      percentage: parseFloat(item.percentage.replace("%", "")),
+      percentage: item.percentage ? parseFloat(item.percentage.replace("%", "")) : 0,
       type: "positive",
     })),
     ...dislikes.map((item) => ({
       theme: item.theme,
-      percentage: parseFloat(item.percentage.replace("%", "")),
+      percentage: item.percentage ? parseFloat(item.percentage.replace("%", "")) : 0,
       type: "negative",
     })),
   ].sort((a, b) => b.percentage - a.percentage);
 
-  // Take top 10 themes
-  const topThemes = allThemes.slice(0, 10);
+  // Show all themes (or limit to a reasonable number like 20 if there are too many)
+  const topThemes = allThemes.length <= 20 ? allThemes : allThemes.slice(0, 20);
 
   const data = {
     labels: topThemes.map((item) => item.theme),
     datasets: [
       {
-        label: "Positive Sentiment",
+        label: "Sentiment Percentage",
         data: topThemes.map((item) =>
-          item.type === "positive" ? item.percentage : 0,
+          item.type === "positive" ? item.percentage : -item.percentage,
         ),
-        backgroundColor: "rgba(16, 185, 129, 0.8)",
-        borderColor: "rgba(16, 185, 129, 1)",
-        borderWidth: 1,
-      },
-      {
-        label: "Negative Sentiment",
-        data: topThemes.map((item) =>
-          item.type === "negative" ? -item.percentage : 0,
+        backgroundColor: topThemes.map((item) =>
+          item.type === "positive"
+            ? "rgba(16, 185, 129, 0.8)"
+            : "rgba(239, 68, 68, 0.8)",
         ),
-        backgroundColor: "rgba(239, 68, 68, 0.8)",
-        borderColor: "rgba(239, 68, 68, 1)",
+        borderColor: topThemes.map((item) =>
+          item.type === "positive"
+            ? "rgba(16, 185, 129, 1)"
+            : "rgba(239, 68, 68, 1)",
+        ),
         borderWidth: 1,
       },
     ],
@@ -82,7 +81,7 @@ export function SentimentChart({ likes, dislikes }: SentimentChartProps) {
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        position: "top" as const,
+        display: false,
       },
       title: {
         display: true,
@@ -91,9 +90,10 @@ export function SentimentChart({ likes, dislikes }: SentimentChartProps) {
       tooltip: {
         callbacks: {
           label: function (context: any) {
-            const value = Math.abs(context.parsed.y);
-            const type = context.parsed.y > 0 ? "Positive" : "Negative";
-            return `${type}: ${value}%`;
+            const themeIndex = context.dataIndex;
+            const theme = topThemes[themeIndex];
+            const type = theme.type === "positive" ? "Positive" : "Negative";
+            return `${type}: ${theme.percentage}%`;
           },
         },
       },

@@ -44,6 +44,7 @@ model User {
   emailVerified DateTime?
   password      String?        // Hashed password
   image         String?
+  timezone      String?        // User's timezone (e.g., "America/New_York")
   accounts      Account[]
   sessions      Session[]
   brands        Brand[]
@@ -67,6 +68,8 @@ model Brand {
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   products      Product[]
   conversations Conversation[]
+  summary       BrandSummary?
+  chunks        AnalysisChunk[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
@@ -80,9 +83,12 @@ model Product {
   brand         Brand          @relation(fields: [brandId], references: [id], onDelete: Cascade)
   reviewsFile   String         // Original CSV filename
   reviewsCount  Int            @default(0)
+  variations    Json?          // Detected product variations
   competitors   Competitor[]
   analyses      Analysis[]
   conversations Conversation[]
+  summary       ProductSummary?
+  chunks        AnalysisChunk[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   isProcessing  Boolean        @default(false)
@@ -96,6 +102,7 @@ model Competitor {
   productId   String
   product     Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   reviewsFile String  // Original CSV filename
+  variations  Json?   // Detected product variations for competitor
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -117,37 +124,40 @@ model Analysis {
 }
 
 model Review {
-  id             String   @id @default(cuid())
-  productId      String
-  competitorId   String?  // null for main product reviews
-  originalText   String   @db.Text
-  rating         Float?
-  date           DateTime?
-  metadata       Json?    // Additional fields from CSV
-  pineconeId     String   @unique // Reference to Pinecone vector
-  analysisTagged Boolean  @default(false) // Whether it's been tagged for analysis
-  createdAt      DateTime @default(now())
+  id               String   @id @default(cuid())
+  productId        String
+  competitorId     String?  // null for main product reviews
+  originalText     String   @db.Text
+  rating           Float?
+  date             DateTime?
+  productVariation String?  // Product variation from CSV
+  metadata         Json?    // Additional fields from CSV
+  pineconeId       String   @unique // Reference to Pinecone vector
+  analysisTagged   Boolean  @default(false) // Whether it's been tagged for analysis
+  createdAt        DateTime @default(now())
 
   @@index([productId])
   @@index([competitorId])
   @@index([rating])
   @@index([date])
+  @@index([productVariation])
 }
 
 model Conversation {
-  id           String    @id @default(cuid())
+  id           String                 @id @default(cuid())
   userId       String
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
   brandId      String?
-  brand        Brand?    @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  brand        Brand?                 @relation(fields: [brandId], references: [id], onDelete: SetNull)
   productId    String?
-  product      Product?  @relation(fields: [productId], references: [id], onDelete: SetNull)
+  product      Product?               @relation(fields: [productId], references: [id], onDelete: SetNull)
   title        String
-  context      Json?     // Cached context data
+  context      Json?                  // Cached context data
   messages     Message[]
-  isActive     Boolean   @default(true)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  summaries    ConversationSummary[]
+  isActive     Boolean                @default(true)
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
 
   @@index([userId])
   @@index([brandId])
@@ -160,7 +170,79 @@ model Message {
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   role           String       // 'user' or 'assistant'
   content        String       @db.Text
+  tokens         Int?         // Token count for this message
   metadata       Json?        // Additional data like sources, confidence, etc.
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId])
+}
+
+// Layer 1: Brand Executive Summaries
+model BrandSummary {
+  id          String   @id @default(cuid())
+  brandId     String   @unique
+  brand       Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  summary     String   @db.Text // 2,000-3,000 token comprehensive summary
+  insights    Json     // Key insights in structured format
+  tokenCount  Int      // Token count for API usage tracking
+  version     Int      @default(1) // For versioning summaries
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([brandId])
+}
+
+// Layer 2: Product Summaries  
+model ProductSummary {
+  id          String   @id @default(cuid())
+  productId   String   @unique
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  summary     String   @db.Text // 500-token summary
+  keyInsights Json     // Structured key insights
+  tokenCount  Int      // Token count tracking
+  pineconeId  String?  // Reference to Pinecone vector
+  version     Int      @default(1) // For versioning
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([productId])
+}
+
+// Layer 3: Analysis Chunks (metadata stored here, vectors in Pinecone)
+model AnalysisChunk {
+  id           String   @id @default(cuid())
+  brandId      String
+  brand        Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  productId    String
+  product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  analysisType String   // sentiment, swot, jtbd, etc.
+  section      String   // Which part of the analysis
+  chunkIndex   Int      // Order within the analysis
+  totalChunks  Int      // Total chunks for this analysis
+  content      String   @db.Text // The actual chunk content
+  tokenCount   Int      // Token count
+  pineconeId   String   @unique // Reference to Pinecone vector
+  metadata     Json     // Rich metadata for filtering
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([brandId])
+  @@index([productId])
+  @@index([analysisType])
+  @@index([pineconeId])
+  @@unique([productId, analysisType, chunkIndex])
+}
+
+// Conversation Summaries for memory management
+model ConversationSummary {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  summary        String       @db.Text // Summary of message range
+  messageCount   Int          // Number of messages summarized
+  startMessageId String       // First message in range
+  endMessageId   String       // Last message in range
+  tokenCount     Int          // Token count of summary
   createdAt      DateTime     @default(now())
 
   @@index([conversationId])

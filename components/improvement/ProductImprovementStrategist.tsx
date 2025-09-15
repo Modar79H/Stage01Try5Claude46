@@ -106,7 +106,7 @@ export function ProductImprovementStrategist({
       });
 
       if (!response.ok) {
-        throw new Error("Failed to send message");
+        throw new Error("Unable to send message at this time");
       }
 
       const data = await response.json();
@@ -191,7 +191,7 @@ export function ProductImprovementStrategist({
   };
 
   return (
-    <Card className="mt-8 border-2 border-primary/20 shadow-lg">
+    <Card className="mt-8 border-2 border-primary/20 shadow-lg min-w-[500px]">
       <CardHeader className="bg-gradient-to-r from-orange-500/10 to-orange-500/5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -238,11 +238,11 @@ export function ProductImprovementStrategist({
           </div>
         </div>
       </CardHeader>
-      <CardContent className="p-0">
+      <CardContent className="p-6">
         <div
           className={cn(
             "transition-all duration-300 overflow-hidden",
-            isExpanded ? "h-[600px]" : "h-[400px]",
+            isExpanded ? "h-[700px]" : "h-[500px]",
           )}
         >
           <div className="h-full flex flex-col">
@@ -332,17 +332,26 @@ export function ProductImprovementStrategist({
 
             {/* Input */}
             <div className="border-t p-4">
-              <div className="flex gap-2">
-                <input
-                  type="text"
+              <div className="flex gap-2 items-end">
+                <textarea
                   value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyPress={(e) =>
-                    e.key === "Enter" && !isLoading && handleSend(input)
-                  }
+                  onChange={(e) => {
+                    setInput(e.target.value);
+                    // Auto-resize textarea based on content
+                    e.target.style.height = 'auto';
+                    e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey && !isLoading) {
+                      e.preventDefault();
+                      handleSend(input);
+                    }
+                  }}
                   placeholder="Ask about product improvements, quality issues, or feature requests..."
-                  className="flex-1 px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="flex-1 px-4 py-3 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-base min-h-[44px] max-h-[120px] resize-none overflow-y-auto"
                   disabled={isLoading}
+                  rows={1}
+                  style={{ height: '44px' }}
                 />
                 <Button
                   onClick={() => handleSend(input)}

@@ -29,7 +29,6 @@ import {
   Trash2,
   Eye,
   Download,
-  RefreshCw,
   Users,
 } from "lucide-react";
 
@@ -60,24 +59,58 @@ interface ProductCardProps {
 export function ProductCard({ product, brandName }: ProductCardProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-  const completedAnalyses = product.analyses.filter(
-    (a) => a.status === "completed",
-  ).length;
-  const totalExpectedAnalyses = product.competitors.length > 0 ? 11 : 10; // With or without competition analysis
-  const completionPercentage = Math.round(
-    (completedAnalyses / totalExpectedAnalyses) * 100,
+  // VOC sub-analyses that should be counted as one
+  const vocSubAnalyses = [
+    "voice_of_customer",
+    "sentiment",
+    "rating_analysis",
+    "four_w_matrix",
+  ];
+
+  // Internal analysis types that should not be counted in UI
+  const internalAnalyses = ["personas", "competition"];
+
+  // Count analyses, treating VOC group as one and excluding internal types
+  const getUniqueAnalysisCount = (analyses: any[]) => {
+    // Filter out internal analysis types
+    const visibleAnalyses = analyses.filter(
+      (a) => !internalAnalyses.includes(a.type),
+    );
+
+    const vocCompleted = visibleAnalyses.some(
+      (a) => vocSubAnalyses.includes(a.type) && a.status === "completed",
+    );
+    const nonVocCompleted = visibleAnalyses.filter(
+      (a) => !vocSubAnalyses.includes(a.type) && a.status === "completed",
+    ).length;
+    return nonVocCompleted + (vocCompleted ? 1 : 0);
+  };
+
+  const completedAnalyses = getUniqueAnalysisCount(product.analyses || []);
+  const totalExpectedAnalyses = product.competitors?.length > 0 ? 8 : 7; // 8 with competition, 7 without
+  const completionPercentage = Math.min(
+    Math.round((completedAnalyses / totalExpectedAnalyses) * 100),
+    100,
   );
 
   const getStatusColor = () => {
     if (product.isProcessing) return "text-blue-600";
-    if (completionPercentage === 100) return "text-green-600";
+    if (
+      completionPercentage >= 100 ||
+      completedAnalyses >= totalExpectedAnalyses
+    )
+      return "text-green-600";
     if (completionPercentage > 0) return "text-yellow-600";
     return "text-gray-600";
   };
 
   const getStatusText = () => {
     if (product.isProcessing) return "Processing...";
-    if (completionPercentage === 100) return "Complete";
+    if (
+      completionPercentage >= 100 ||
+      completedAnalyses >= totalExpectedAnalyses
+    )
+      return "Complete";
     if (completionPercentage > 0) return "Partial";
     return "Pending";
   };
@@ -112,15 +145,6 @@ export function ProductCard({ product, brandName }: ProductCardProps) {
                     View Analysis
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link
-                    href={`/products/${product.id}/competitors`}
-                    className="flex items-center"
-                  >
-                    <Users className="h-4 w-4 mr-2" />
-                    Manage Competitors
-                  </Link>
-                </DropdownMenuItem>
                 {completionPercentage > 0 && (
                   <DropdownMenuItem asChild>
                     <Link
@@ -132,15 +156,6 @@ export function ProductCard({ product, brandName }: ProductCardProps) {
                     </Link>
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem asChild>
-                  <Link
-                    href={`/products/${product.id}/reprocess`}
-                    className="flex items-center"
-                  >
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Reprocess
-                  </Link>
-                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => setShowDeleteDialog(true)}

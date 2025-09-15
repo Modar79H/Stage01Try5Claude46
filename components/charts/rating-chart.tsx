@@ -65,12 +65,12 @@ export function RatingChart({ data }: RatingChartProps) {
       borderWidth: 2,
       pointRadius: (context: any) => {
         const point = context.raw as any;
-        const freq = parseFloat(point.frequency.replace("%", ""));
+        const freq = parseFloat(point?.frequency?.replace("%", "") || "0");
         return Math.max(5, Math.min(15, freq / 2));
       },
       pointHoverRadius: (context: any) => {
         const point = context.raw as any;
-        const freq = parseFloat(point.frequency.replace("%", ""));
+        const freq = parseFloat(point?.frequency?.replace("%", "") || "0");
         return Math.max(7, Math.min(17, freq / 2 + 2));
       },
     })),
@@ -116,9 +116,14 @@ export function RatingChart({ data }: RatingChartProps) {
         min: 0.5,
         max: 5.5,
         ticks: {
-          values: [1, 2, 3, 4, 5],
+          stepSize: 1,
+          min: 1,
+          max: 5,
           callback: function (value: any) {
-            return value + " ★";
+            if (Number.isInteger(value) && value >= 1 && value <= 5) {
+              return value + " ★";
+            }
+            return "";
           },
         },
         grid: {

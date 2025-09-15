@@ -3,7 +3,14 @@
 
 import React from "react";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BadgeTooltip } from "./BadgeTooltip";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import {
   Trophy,
@@ -143,18 +150,7 @@ interface SmartCompetitionAnalysisProps {
 export function SmartCompetitionAnalysis({
   analysis,
 }: SmartCompetitionAnalysisProps) {
-  // Debug logging to help identify the issue
-  console.log("🔍 SmartCompetitionAnalysis - Full analysis object:", analysis);
-  console.log("🔍 SmartCompetitionAnalysis - Analysis data:", analysis?.data);
-  console.log(
-    "🔍 SmartCompetitionAnalysis - Smart competition data:",
-    analysis?.data?.smart_competition_analysis,
-  );
-
   if (!analysis?.data?.smart_competition_analysis) {
-    console.log(
-      "❌ SmartCompetitionAnalysis - No smart_competition_analysis data found",
-    );
     return (
       <Card>
         <CardContent className="py-8">
@@ -173,18 +169,8 @@ export function SmartCompetitionAnalysis({
     );
   }
 
-  const data = analysis.data.smart_competition_analysis;
+  const data = analysis.data?.smart_competition_analysis;
 
-  // Debug the competitor data specifically
-  console.log("🎯 SmartCompetitionAnalysis - SWOT Matrix:", data.swot_matrix);
-  console.log(
-    "🎯 SmartCompetitionAnalysis - Competitor Strengths:",
-    data.swot_matrix?.strength_comparison?.competitor_strengths,
-  );
-  console.log(
-    "🎯 SmartCompetitionAnalysis - Competitor Weaknesses:",
-    data.swot_matrix?.weakness_comparison?.competitor_weaknesses,
-  );
   const getDifferentiationColor = (score: number) => {
     if (score > 0.5) return "text-green-600 bg-green-50";
     if (score > -0.5) return "text-yellow-600 bg-yellow-50";
@@ -346,15 +332,17 @@ export function SmartCompetitionAnalysis({
                           </Badge>
                         </td>
                         <td className="text-center py-2">
-                          <Badge
-                            variant={
-                              attr.strategic_value === "high"
-                                ? "default"
-                                : "secondary"
-                            }
-                          >
-                            {attr.customer_importance}
-                          </Badge>
+                          <BadgeTooltip type="importance" value={attr.customer_importance}>
+                            <Badge
+                              variant={
+                                attr.strategic_value === "high"
+                                  ? "default"
+                                  : "secondary"
+                              }
+                            >
+                              {attr.customer_importance}
+                            </Badge>
+                          </BadgeTooltip>
                         </td>
                       </tr>
                       {attr.explanation && (
@@ -775,6 +763,11 @@ export function SmartCompetitionAnalysis({
             <Route className="h-5 w-5 mr-2" />
             Customer Journey Battle Map
           </CardTitle>
+          <CardDescription>
+            Friction scores measure customer pain points (0-10 scale). Lower
+            scores indicate smoother experiences with fewer obstacles, while
+            higher scores reveal more customer frustrations and barriers.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {["awareness", "purchase", "post_purchase"].map((stage) => {
@@ -870,6 +863,12 @@ export function SmartCompetitionAnalysis({
             <Users className="h-5 w-5 mr-2" />
             Customer Segmentation Overlap
           </CardTitle>
+          <CardDescription>
+            Overlap percentage shows how much your customer segments match with
+            competitors. High overlap (&gt;50%) means you're competing for the
+            same customers, while low overlap (&lt;30%) indicates different
+            market positioning.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>

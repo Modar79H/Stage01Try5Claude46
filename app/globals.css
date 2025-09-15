@@ -7,82 +7,110 @@
 
 @layer base {
   :root {
-    /* Modern SaaS Color System */
-    --background: 0 0% 100%;
-    --foreground: 220 13% 13%;
+    /* Sophisticated Color System - Context.ai Inspired */
+    --background: 210 20% 98%;  /* #fafafa */
+    --foreground: 222 13% 14%;  /* #1f2937 */
     
     /* Card styling */
-    --card: 0 0% 100%;
-    --card-foreground: 220 13% 13%;
+    --card: 0 0% 100%;  /* Pure white */
+    --card-foreground: 220 13% 20%;  /* #1f2937 */
     
-    /* Primary brand colors */
-    --primary: 234 89% 62%;
+    /* Primary brand colors - Muted blue */
+    --primary: 217 91% 60%;  /* #3b82f6 */
     --primary-foreground: 0 0% 100%;
     
-    /* Secondary colors */
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Secondary colors - Light gray */
+    --secondary: 210 20% 96%;  /* #f8f9fa */
+    --secondary-foreground: 217 19% 27%;  /* #374151 */
     
     /* Muted colors */
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 210 20% 96%;  /* #f8f9fa */
+    --muted-foreground: 215 16% 47%;  /* #6b7280 */
     
-    /* Accent colors */
-    --accent: 142 76% 36%;
+    /* Accent colors - Subtle blue */
+    --accent: 217 91% 65%;  /* #60a5fa */
     --accent-foreground: 0 0% 100%;
     
-    /* Status colors */
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 0%;
-    --success: 142 76% 36%;
+    /* Popover colors - Dropdown/Select backgrounds */
+    --popover: 0 0% 100%;  /* Pure white */
+    --popover-foreground: 220 13% 20%;  /* #1f2937 */
+    
+    /* Status colors - Muted versions */
+    --destructive: 0 72% 58%;  /* #ef4444 */
+    --destructive-foreground: 0 0% 100%;
+    --warning: 34 92% 50%;  /* #f59e0b */
+    --warning-foreground: 0 0% 100%;
+    --success: 158 64% 42%;  /* #10b981 */
     --success-foreground: 0 0% 100%;
     
     /* UI elements */
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 234 89% 62%;
+    --border: 220 13% 91%;  /* #e5e7eb */
+    --input: 220 13% 91%;  /* #e5e7eb */
+    --ring: 217 91% 60%;  /* Primary blue */
     
-    /* Radiuses */
-    --radius: 0.75rem;
-    --radius-sm: 0.5rem;
-    --radius-lg: 1rem;
+    /* Radiuses - Subtle rounding */
+    --radius: 0.5rem;  /* 8px */
+    --radius-sm: 0.375rem;  /* 6px */
+    --radius-lg: 0.625rem;  /* 10px */
     
-    /* Shadows */
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    /* Sophisticated Shadows */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    
+    /* Typography scale */
+    --text-xs: 0.75rem;  /* 12px */
+    --text-sm: 0.875rem;  /* 14px */
+    --text-base: 1rem;  /* 16px */
+    --text-lg: 1.125rem;  /* 18px */
+    --text-xl: 1.25rem;  /* 20px */
+    --text-2xl: 1.5rem;  /* 24px */
+    --text-3xl: 1.875rem;  /* 30px */
+    --text-4xl: 2.25rem;  /* 36px */
+    --text-5xl: 3rem;  /* 48px */
+    
+    /* Spacing scale */
+    --space-1: 0.5rem;  /* 8px */
+    --space-2: 1rem;  /* 16px */
+    --space-3: 1.5rem;  /* 24px */
+    --space-4: 2rem;  /* 32px */
+    --space-6: 3rem;  /* 48px */
+    --space-8: 4rem;  /* 64px */
   }
 
   .dark {
-    /* Dark mode colors */
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    /* Sophisticated Dark Mode */
+    --background: 222 47% 7%;  /* #0a0f1b */
+    --foreground: 210 20% 95%;  /* #f1f5f9 */
     
-    --card: 224 71% 8%;
-    --card-foreground: 210 40% 98%;
+    --card: 224 47% 11%;  /* #111827 */
+    --card-foreground: 210 20% 95%;
     
-    --primary: 234 89% 62%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 217 91% 60%;  /* Same blue */
+    --primary-foreground: 0 0% 100%;
     
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 217 33% 17%;  /* #1f2937 */
+    --secondary-foreground: 210 20% 95%;
     
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 217 33% 17%;  /* #1f2937 */
+    --muted-foreground: 215 20% 65%;  /* #9ca3af */
     
-    --accent: 142 76% 36%;
+    --accent: 217 91% 65%;  /* Same accent */
     --accent-foreground: 0 0% 100%;
     
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
+    /* Popover colors for dark mode */
+    --popover: 224 47% 11%;  /* #111827 */
+    --popover-foreground: 210 20% 95%;  /* #f1f5f9 */
     
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 234 89% 62%;
+    --destructive: 0 72% 58%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 217 33% 17%;  /* #1f2937 */
+    --input: 217 33% 17%;
+    --ring: 217 91% 60%;
   }
 }
 
@@ -98,108 +126,142 @@
   
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   
-  /* Typography */
+  /* Sophisticated Typography */
   h1, h2, h3, h4, h5, h6 {
-    @apply font-semibold tracking-tight;
+    @apply font-semibold text-gray-900 dark:text-gray-100;
+    letter-spacing: -0.025em;
+    line-height: 1.2;
   }
   
   h1 {
-    @apply text-4xl md:text-5xl;
+    @apply text-3xl md:text-4xl lg:text-5xl;
+    font-weight: 600;
   }
   
   h2 {
-    @apply text-3xl md:text-4xl;
+    @apply text-2xl md:text-3xl lg:text-4xl;
+    font-weight: 600;
   }
   
   h3 {
-    @apply text-2xl md:text-3xl;
+    @apply text-xl md:text-2xl lg:text-3xl;
+    font-weight: 500;
   }
   
   h4 {
-    @apply text-xl md:text-2xl;
+    @apply text-lg md:text-xl lg:text-2xl;
+    font-weight: 500;
   }
   
   h5 {
-    @apply text-lg md:text-xl;
+    @apply text-base md:text-lg lg:text-xl;
+    font-weight: 500;
   }
   
   h6 {
-    @apply text-base md:text-lg;
+    @apply text-sm md:text-base lg:text-lg;
+    font-weight: 500;
   }
   
   p {
-    @apply leading-relaxed;
+    @apply leading-relaxed text-gray-700 dark:text-gray-300;
+    line-height: 1.75;
+  }
+  
+  /* Links */
+  a {
+    @apply text-primary hover:text-primary/80 transition-colors duration-200;
+  }
+  
+  /* Selections */
+  ::selection {
+    @apply bg-primary/20 text-foreground;
   }
 }
 
-/* Modern Card Styles */
+/* Sophisticated Component Styles */
 @layer components {
-  .card-modern {
-    @apply bg-card text-card-foreground rounded-xl border shadow-sm transition-all duration-200;
+  /* Card Components */
+  .card {
+    @apply bg-card text-card-foreground rounded-lg border border-border shadow-sm transition-all duration-200;
   }
   
-  .card-modern:hover {
+  .card-hover:hover {
     @apply shadow-md -translate-y-0.5;
   }
   
-  .card-glass {
-    @apply bg-white/70 dark:bg-gray-900/70 backdrop-blur-lg border-white/20 dark:border-gray-700/20;
+  .card-clean {
+    @apply bg-white dark:bg-gray-900 rounded-lg p-6 shadow-[0_1px_3px_rgba(0,0,0,0.1)];
   }
   
-  /* Button Styles */
+  /* Button Styles - Sophisticated & Minimal */
+  .btn {
+    @apply inline-flex items-center justify-center font-medium transition-all duration-200 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
   .btn-primary {
-    @apply bg-primary text-primary-foreground hover:bg-primary/90 font-medium py-2.5 px-5 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md;
+    @apply btn bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 text-sm shadow-sm hover:shadow focus:ring-primary;
   }
   
   .btn-secondary {
-    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80 font-medium py-2.5 px-5 rounded-lg transition-all duration-200;
+    @apply btn bg-secondary text-secondary-foreground hover:bg-gray-100 dark:hover:bg-gray-800 px-4 py-2 text-sm;
   }
   
   .btn-outline {
-    @apply border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground font-medium py-2.5 px-5 rounded-lg transition-all duration-200;
+    @apply btn border border-border text-foreground hover:bg-secondary px-4 py-2 text-sm;
   }
   
-  /* Status Badges */
+  .btn-ghost {
+    @apply btn text-foreground hover:bg-secondary px-4 py-2 text-sm;
+  }
+  
+  .btn-lg {
+    @apply px-6 py-3 text-base;
+  }
+  
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs;
+  }
+  
+  /* Status Badges - Sophisticated */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium;
+  }
+  
   .badge-success {
-    @apply bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 px-3 py-1 rounded-full text-sm font-medium;
+    @apply badge bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-400;
   }
   
   .badge-warning {
-    @apply bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 px-3 py-1 rounded-full text-sm font-medium;
+    @apply badge bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400;
   }
   
   .badge-error {
-    @apply bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 px-3 py-1 rounded-full text-sm font-medium;
+    @apply badge bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-400;
   }
   
   .badge-info {
-    @apply bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 px-3 py-1 rounded-full text-sm font-medium;
+    @apply badge bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400;
   }
   
-  /* Gradient Backgrounds */
-  .gradient-primary {
-    @apply bg-gradient-to-r from-blue-600 to-indigo-600;
+  .badge-default {
+    @apply badge bg-gray-100 text-gray-700 dark:bg-gray-500/10 dark:text-gray-400;
   }
   
-  .gradient-success {
-    @apply bg-gradient-to-r from-green-500 to-emerald-600;
+  /* Subtle Gradients */
+  .gradient-subtle {
+    @apply bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-gray-900 dark:to-gray-800/50;
   }
   
-  .gradient-warning {
-    @apply bg-gradient-to-r from-amber-500 to-orange-600;
-  }
-  
-  .gradient-danger {
-    @apply bg-gradient-to-r from-red-500 to-rose-600;
-  }
-  
-  /* Glass Effects */
-  .glass-effect {
-    @apply bg-white/10 backdrop-blur-md border border-white/20;
+  .gradient-card {
+    @apply bg-gradient-to-br from-white via-gray-50/50 to-white dark:from-gray-900 dark:via-gray-800/50 dark:to-gray-900;
   }
 }
 
@@ -340,22 +402,41 @@
   @apply bg-muted/50;
 }
 
-/* Form Inputs */
-.input-modern {
-  @apply w-full px-4 py-2.5 bg-background border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200;
+/* Form Elements - Sophisticated */
+.input {
+  @apply w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 placeholder-gray-400;
 }
 
-.input-floating-label {
-  @apply relative;
+.input-lg {
+  @apply px-4 py-3 text-base;
 }
 
-.input-floating-label input:focus + label,
-.input-floating-label input:not(:placeholder-shown) + label {
-  @apply -translate-y-6 text-xs text-primary;
+.input-sm {
+  @apply px-2 py-1.5 text-xs;
 }
 
-.input-floating-label label {
-  @apply absolute left-4 top-2.5 transition-all duration-200 pointer-events-none text-muted-foreground;
+.textarea {
+  @apply input min-h-[80px] resize-y;
+}
+
+.select {
+  @apply input cursor-pointer;
+}
+
+.label {
+  @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5;
+}
+
+.form-group {
+  @apply space-y-1.5;
+}
+
+.checkbox {
+  @apply w-4 h-4 text-primary bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary/20;
+}
+
+.radio {
+  @apply w-4 h-4 text-primary bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary/20;
 }
 
 /* Tooltip Styles */
@@ -417,9 +498,73 @@
   @apply transition-transform duration-200 hover:scale-110;
 }
 
-/* Dashboard Grid */
+/* Layout Components */
+.container-max {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+.container-narrow {
+  @apply max-w-4xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+.section {
+  @apply py-8 sm:py-12 lg:py-16;
+}
+
+.section-sm {
+  @apply py-4 sm:py-6 lg:py-8;
+}
+
+.section-lg {
+  @apply py-12 sm:py-16 lg:py-24;
+}
+
+/* Grid Systems */
+.grid-auto {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6;
+}
+
 .dashboard-grid {
-  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6;
+  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6;
+}
+
+/* Spacing Utilities */
+.stack {
+  @apply space-y-4;
+}
+
+.stack-sm {
+  @apply space-y-2;
+}
+
+.stack-lg {
+  @apply space-y-6;
+}
+
+/* Text Utilities */
+.text-balance {
+  text-wrap: balance;
+}
+
+.text-muted {
+  @apply text-muted-foreground;
+}
+
+.text-subtle {
+  @apply text-gray-500 dark:text-gray-400;
+}
+
+/* Dividers */
+.divider {
+  @apply border-t border-border my-6;
+}
+
+.divider-sm {
+  @apply border-t border-border my-3;
+}
+
+.divider-lg {
+  @apply border-t border-border my-8;
 }
 
 /* Responsive Text */

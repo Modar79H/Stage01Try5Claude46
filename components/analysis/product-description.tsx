@@ -57,7 +57,7 @@ export function ProductDescription({ analysis }: ProductDescriptionProps) {
     );
   }
 
-  const data = analysis.data.product_description;
+  const data = analysis.data?.product_description;
 
   if (!data) {
     return (
@@ -102,8 +102,8 @@ export function ProductDescription({ analysis }: ProductDescriptionProps) {
               <h3 className="font-semibold text-lg mb-3">Key Attributes</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {data.attributes.map((attribute, index) => (
-                  <div key={index} className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                  <div key={index} className="flex items-start space-x-2">
+                    <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0 mt-1.5"></div>
                     <span className="text-gray-700">{attribute}</span>
                   </div>
                 ))}

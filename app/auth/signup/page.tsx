@@ -16,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BarChart3, AlertCircle, CheckCircle } from "lucide-react";
+import { getUserTimezone } from "@/lib/utils";
 
 export default function SignUpPage() {
   const [name, setName] = useState("");
@@ -55,6 +56,7 @@ export default function SignUpPage() {
           name,
           email,
           password,
+          timezone: getUserTimezone(),
         }),
       });
 

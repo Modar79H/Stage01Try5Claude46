@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { 
-  MessageSquare, 
-  ChevronLeft, 
-  Archive, 
+import {
+  MessageSquare,
+  ChevronLeft,
+  Archive,
   Calendar,
-  Package
+  Package,
+  Building2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -23,14 +24,20 @@ interface Conversation {
 
 interface ConversationListProps {
   onSelect: (conversationId: string) => void;
-  onClose: () => void;
+  onClose?: () => void;
+  onNew?: () => void;
   currentConversationId?: string | null;
+  brandId?: string;
+  productId?: string;
 }
 
 export default function ConversationList({
   onSelect,
   onClose,
+  onNew,
   currentConversationId,
+  brandId,
+  productId,
 }: ConversationListProps) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -87,15 +94,17 @@ export default function ConversationList({
           <MessageSquare size={20} />
           <span>Conversation History</span>
         </h3>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onClose}
-          className="text-muted-foreground"
-        >
-          <ChevronLeft size={16} className="mr-1" />
-          Back
-        </Button>
+        {onClose && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+            className="text-muted-foreground"
+          >
+            <ChevronLeft size={16} className="mr-1" />
+            Back
+          </Button>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto">
@@ -118,15 +127,25 @@ export default function ConversationList({
                 key={conversation.id}
                 className={cn(
                   "p-4 hover:bg-muted/50 cursor-pointer transition-colors",
-                  currentConversationId === conversation.id && "bg-muted"
+                  currentConversationId === conversation.id && "bg-muted",
                 )}
                 onClick={() => onSelect(conversation.id)}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-medium truncate">{conversation.title}</h4>
-                    
+                    <h4 className="font-medium truncate">
+                      {conversation.title}
+                    </h4>
+
                     <div className="flex items-center space-x-4 mt-1 text-xs text-muted-foreground">
+                      {conversation.brand && (
+                        <span className="flex items-center space-x-1">
+                          <Building2 size={12} />
+                          <span className="truncate">
+                            {conversation.brand.name}
+                          </span>
+                        </span>
+                      )}
                       {conversation.product && (
                         <span className="flex items-center space-x-1">
                           <Package size={12} />

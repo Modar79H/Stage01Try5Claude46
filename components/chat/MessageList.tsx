@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { User, Bot, AlertCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { User, Bot, AlertCircle, Copy, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn, formatDateTime } from "@/lib/utils";
 import { EnhancedMessage } from "./EnhancedMessage";
+import { useUserTimezone } from "@/hooks/useUserTimezone";
 
 interface Message {
   role: "user" | "assistant";
@@ -72,6 +74,18 @@ function MessageBubble({ message }: { message: Message }) {
   const isUser = message.role === "user";
   const [displayContent, setDisplayContent] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
+  const { timezone } = useUserTimezone();
+
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(message.content);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy text: ", err);
+    }
+  };
 
   useEffect(() => {
     if (!isUser && message.content) {
@@ -124,37 +138,54 @@ function MessageBubble({ message }: { message: Message }) {
         )}
       </div>
 
-      <div
-        className={cn(
-          "rounded-lg px-4 py-2 max-w-[80%]",
-          isUser
-            ? "bg-blue-500 text-white"
-            : message.isError
-              ? "bg-red-50 text-red-900"
-              : "bg-muted",
-        )}
-      >
-        {isUser ? (
-          <p className="whitespace-pre-wrap break-words">{displayContent}</p>
-        ) : (
-          <EnhancedMessage
-            content={displayContent}
-            role={message.role}
-            className={message.isError ? "text-red-900" : ""}
-          />
-        )}
+      <div className="relative group">
+        <div
+          className={cn(
+            "rounded-lg px-4 py-2 max-w-[80%]",
+            isUser
+              ? "bg-blue-500 text-white"
+              : message.isError
+                ? "bg-red-50 text-red-900"
+                : "bg-muted",
+          )}
+        >
+          {!isUser && !message.isError && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={copyToClipboard}
+              className="absolute -top-2 -right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity bg-background border border-border shadow-sm"
+              title="Copy message"
+            >
+              {isCopied ? (
+                <Check className="h-3 w-3 text-green-600" />
+              ) : (
+                <Copy className="h-3 w-3" />
+              )}
+            </Button>
+          )}
+          {isUser ? (
+            <p className="whitespace-pre-wrap break-words">{displayContent}</p>
+          ) : (
+            <EnhancedMessage
+              content={displayContent}
+              role={message.role}
+              className={message.isError ? "text-red-900" : ""}
+            />
+          )}
 
-        {message.metadata?.sources && (
-          <div className="mt-2 pt-2 border-t border-white/20 text-xs opacity-70">
-            Sources: {message.metadata.sources.join(", ")}
-          </div>
-        )}
+          {message.metadata?.sources && (
+            <div className="mt-2 pt-2 border-t border-white/20 text-xs opacity-70">
+              Sources: {message.metadata.sources.join(", ")}
+            </div>
+          )}
 
-        {message.timestamp && (
-          <p className="text-xs opacity-60 mt-1">
-            {new Date(message.timestamp).toLocaleTimeString()}
-          </p>
-        )}
+          {message.timestamp && (
+            <p className="text-xs opacity-60 mt-1">
+              {formatDateTime(message.timestamp, timezone)}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

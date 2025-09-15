@@ -7,7 +7,7 @@ import { useParams, useSearchParams } from "next/navigation";
 import { ProductDescription } from "@/components/analysis/product-description";
 import { SentimentAnalysis } from "@/components/analysis/sentiment-analysis";
 import { VoiceOfCustomer } from "@/components/analysis/voice-of-customer";
-import { FourWMatrix from "@/components/analysis/four-w-matrix";
+import { FourWMatrix } from "@/components/analysis/four-w-matrix";
 import { JTBDAnalysis } from "@/components/analysis/jtbd-analysis";
 import { STPAnalysis } from "@/components/analysis/stp-analysis";
 import { SWOTAnalysis } from "@/components/analysis/swot-analysis";
@@ -68,7 +68,9 @@ export default function PrintPage() {
     );
   }
 
-  const completedAnalyses = product.analyses.filter(a => a.status === "completed");
+  const completedAnalyses = product.analyses.filter(
+    (a) => a.status === "completed",
+  );
 
   const getAnalysisComponent = (analysis: any) => {
     const props = {
@@ -166,7 +168,7 @@ export default function PrintPage() {
           background: white;
           border-radius: 8px;
           padding: 20px;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .print-section h2 {
@@ -177,13 +179,15 @@ export default function PrintPage() {
         }
 
         /* Ensure charts render properly */
-        canvas, svg {
+        canvas,
+        svg {
           max-width: 100% !important;
           height: auto !important;
         }
 
         /* Hide interactive elements */
-        button, .cursor-pointer {
+        button,
+        .cursor-pointer {
           display: none !important;
         }
 
@@ -214,7 +218,8 @@ export default function PrintPage() {
             <strong>Brand:</strong> {product.brand.name}
           </div>
           <div>
-            <strong>Reviews Analyzed:</strong> {product.reviewsCount.toLocaleString()}
+            <strong>Reviews Analyzed:</strong>{" "}
+            {product.reviewsCount.toLocaleString()}
           </div>
           <div>
             <strong>Generated:</strong> {new Date().toLocaleDateString()}
@@ -241,7 +246,9 @@ export default function PrintPage() {
 
             return (
               <div key={analysis.id} className="flex justify-between">
-                <span>{index + 1}. {titles[analysis.type] || analysis.type}</span>
+                <span>
+                  {index + 1}. {titles[analysis.type] || analysis.type}
+                </span>
                 <span>Page {index + 2}</span>
               </div>
             );
@@ -251,13 +258,16 @@ export default function PrintPage() {
 
       {/* Analysis Sections */}
       {completedAnalyses.map((analysis, index) => (
-        <div key={analysis.id} className={`print-section ${index > 0 ? 'page-break' : ''}`}>
+        <div
+          key={analysis.id}
+          className={`print-section ${index > 0 ? "page-break" : ""}`}
+        >
           {getAnalysisComponent(analysis)}
         </div>
       ))}
 
       {/* Mark as loaded for Puppeteer */}
-      <div style={{ display: 'none' }} data-analysis-loaded="true"></div>
+      <div style={{ display: "none" }} data-analysis-loaded="true"></div>
     </div>
   );
 }

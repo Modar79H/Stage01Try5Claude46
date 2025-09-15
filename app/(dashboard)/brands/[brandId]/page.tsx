@@ -22,6 +22,7 @@ import {
   BarChart3,
   TrendingUp,
 } from "lucide-react";
+// Brand-level chatbots removed - using product-level only
 
 async function getBrand(brandId: string, userId: string) {
   const brand = await prisma.brand.findUnique({
@@ -67,10 +68,36 @@ export default async function BrandDetailPage({
   }
 
   const totalProducts = brand.products.length;
-  const totalAnalyses = brand.products.reduce(
-    (sum, product) => sum + product._count.analyses,
-    0,
-  );
+
+  // VOC sub-analyses that should be counted as one
+  const vocSubAnalyses = [
+    "voice_of_customer",
+    "sentiment",
+    "rating_analysis",
+    "four_w_matrix",
+  ];
+
+  // Internal analysis types that should not be counted in UI
+  const internalAnalyses = ["personas", "competition"];
+
+  const totalAnalyses = brand.products.reduce((sum, product) => {
+    // Filter out internal analysis types
+    const visibleAnalyses = product.analyses.filter(
+      (a) => !internalAnalyses.includes(a.type),
+    );
+
+    // Count VOC group as one
+    const vocCompleted = visibleAnalyses.some((a) =>
+      vocSubAnalyses.includes(a.type),
+    )
+      ? 1
+      : 0;
+    const nonVocCompleted = visibleAnalyses.filter(
+      (a) => !vocSubAnalyses.includes(a.type),
+    ).length;
+    return sum + vocCompleted + nonVocCompleted;
+  }, 0);
+
   const totalReviews = brand.products.reduce(
     (sum, product) => sum + product.reviewsCount,
     0,
@@ -165,14 +192,6 @@ export default async function BrandDetailPage({
       <div>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-gray-900">Products</h2>
-          {totalProducts > 0 && (
-            <Button asChild variant="outline">
-              <Link href={`/brands/${brand.id}/products/new`}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Another Product
-              </Link>
-            </Button>
-          )}
         </div>
 
         {brand.products.length === 0 ? (

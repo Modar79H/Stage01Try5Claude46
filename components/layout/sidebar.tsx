@@ -39,31 +39,16 @@ export function Sidebar({ user }: SidebarProps) {
       name: "Dashboard",
       href: "/dashboard",
       icon: LayoutDashboard,
-      gradient: "from-blue-600 to-indigo-600",
     },
     {
       name: "Brands",
       href: "/brands",
       icon: Building2,
-      gradient: "from-purple-600 to-pink-600",
     },
     {
       name: "Products",
       href: "/products",
       icon: Package,
-      gradient: "from-green-600 to-emerald-600",
-    },
-    {
-      name: "Analytics",
-      href: "/analytics",
-      icon: BarChart3,
-      gradient: "from-orange-600 to-red-600",
-    },
-    {
-      name: "AI Assistants",
-      href: "/assistants",
-      icon: Brain,
-      gradient: "from-cyan-600 to-blue-600",
     },
   ];
 
@@ -83,28 +68,28 @@ export function Sidebar({ user }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 z-40 h-screen transition-all duration-300 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800",
+        "fixed left-0 top-0 z-40 h-screen transition-all duration-300 bg-white dark:bg-gray-900 border-r border-border",
         collapsed ? "w-20" : "w-64",
       )}
     >
       <div className="flex h-full flex-col">
         {/* Logo Section */}
-        <div className="flex h-16 items-center justify-between px-4 border-b border-gray-200 dark:border-gray-800">
-          <Link href="/" className="flex items-center space-x-3">
+        <div className="flex h-16 items-center justify-between px-4 border-b border-border">
+          <Link href="/dashboard" className="flex items-center space-x-3">
             <div className="relative">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-center">
-                <Sparkles className="w-6 h-6 text-white" />
+              <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-white" />
               </div>
             </div>
             {!collapsed && (
-              <span className="text-xl font-bold gradient-text">RevuIntel</span>
+              <span className="text-xl font-semibold text-foreground">RevuIntel</span>
             )}
           </Link>
           <Button
             variant="ghost"
-            size="icon-sm"
+            size="icon"
             onClick={() => setCollapsed(!collapsed)}
-            className="ml-auto"
+            className="ml-auto h-8 w-8 text-muted-foreground hover:text-foreground"
           >
             {collapsed ? (
               <ChevronRight className="h-4 w-4" />
@@ -116,40 +101,25 @@ export function Sidebar({ user }: SidebarProps) {
 
         {/* User Section */}
         {user && (
-          <div className="px-4 py-4 border-b border-gray-200 dark:border-gray-800">
+          <div className="px-4 py-4 border-b border-border">
             <div className="flex items-center space-x-3">
               <div className="relative">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-center text-white font-medium">
+                <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-foreground font-medium text-sm">
                   {user.name?.[0] || user.email?.[0] || "U"}
                 </div>
-                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-900"></div>
+                <div className="absolute bottom-0 right-0 w-3 h-3 bg-success rounded-full border-2 border-white dark:border-gray-900"></div>
               </div>
               {!collapsed && (
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                  <p className="text-sm font-medium text-foreground truncate">
                     {user.name || "User"}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                  <p className="text-xs text-muted-foreground truncate">
                     {user.email}
                   </p>
                 </div>
               )}
             </div>
-          </div>
-        )}
-
-        {/* Quick Actions */}
-        {!collapsed && (
-          <div className="px-4 py-4">
-            <Button
-              variant="gradient"
-              size="sm"
-              className="w-full"
-              onClick={() => (window.location.href = "/brands/new")}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              New Brand
-            </Button>
           </div>
         )}
 
@@ -160,16 +130,15 @@ export function Sidebar({ user }: SidebarProps) {
               key={item.name}
               href={item.href}
               className={cn(
-                "flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200",
+                "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200",
                 isActive(item.href)
-                  ? "bg-gradient-to-r text-white shadow-md"
-                  : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800",
-                isActive(item.href) && item.gradient,
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary",
               )}
             >
               <item.icon
                 className={cn(
-                  "flex-shrink-0 h-5 w-5",
+                  "flex-shrink-0 h-4 w-4",
                   collapsed ? "mx-auto" : "mr-3",
                 )}
               />
@@ -179,21 +148,21 @@ export function Sidebar({ user }: SidebarProps) {
         </nav>
 
         {/* Bottom Navigation */}
-        <div className="border-t border-gray-200 dark:border-gray-800 p-3 space-y-1">
+        <div className="border-t border-border p-3 space-y-1">
           {bottomNavigation.map((item) => (
             <Link
               key={item.name}
               href={item.href}
               className={cn(
-                "flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200",
+                "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200",
                 isActive(item.href)
-                  ? "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
-                  : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800",
+                  ? "bg-secondary text-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary",
               )}
             >
               <item.icon
                 className={cn(
-                  "flex-shrink-0 h-5 w-5",
+                  "flex-shrink-0 h-4 w-4",
                   collapsed ? "mx-auto" : "mr-3",
                 )}
               />
@@ -205,11 +174,11 @@ export function Sidebar({ user }: SidebarProps) {
             <Button
               type="submit"
               variant="ghost"
-              className="w-full justify-start px-3 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="w-full justify-start px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md"
             >
               <LogOut
                 className={cn(
-                  "flex-shrink-0 h-5 w-5",
+                  "flex-shrink-0 h-4 w-4",
                   collapsed ? "mx-auto" : "mr-3",
                 )}
               />
@@ -218,18 +187,18 @@ export function Sidebar({ user }: SidebarProps) {
           </form>
         </div>
 
-        {/* Pro Badge */}
+        {/* Pro Badge - Sophisticated */}
         {!collapsed && (
           <div className="p-4">
-            <div className="rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 p-4 text-white">
-              <h3 className="font-medium mb-1">Pro Features</h3>
-              <p className="text-xs opacity-90 mb-3">
+            <div className="rounded-lg bg-secondary border border-border p-4">
+              <h3 className="font-medium text-foreground mb-1">Pro Features</h3>
+              <p className="text-xs text-muted-foreground mb-3">
                 Unlock advanced AI analysis
               </p>
               <Button
-                variant="secondary"
+                variant="outline"
                 size="sm"
-                className="w-full bg-white/20 hover:bg-white/30 text-white border-0"
+                className="w-full"
               >
                 Upgrade Now
               </Button>

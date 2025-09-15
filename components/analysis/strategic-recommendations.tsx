@@ -177,7 +177,7 @@ export function StrategicRecommendations({
     );
   }
 
-  const data = analysis.data.strategic_recommendations;
+  const data = analysis.data?.strategic_recommendations;
 
   if (!data) {
     return (

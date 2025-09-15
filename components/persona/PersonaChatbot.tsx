@@ -88,7 +88,7 @@ export function PersonaChatbot({
       });
 
       if (!response.ok) {
-        throw new Error("Failed to send message");
+        throw new Error("Unable to send message at this time");
       }
 
       const data = await response.json();
