@@ -118,22 +118,34 @@ class OpenAIAnalysisService {
 
       while (retries > 0) {
         try {
-          completion = await openai.chat.completions.create({
-            model: "gpt-5-mini",
+          const isProductDescription = analysisType === "product_description";
+          const baseParams: any = {
+            model: isProductDescription ? "gpt-4o-mini" : "gpt-5-mini",
             messages: [
               { role: "system", content: systemPrompt },
               { role: "user", content: userPrompt },
             ],
             response_format: { type: "json_object" },
-            max_completion_tokens:
+          };
+
+          // Different parameters for different models
+          if (isProductDescription) {
+            // GPT-4o-mini parameters
+            baseParams.temperature = 0.1;
+            baseParams.max_tokens = 6000;
+          } else {
+            // GPT-5-mini parameters
+            baseParams.max_completion_tokens =
               analysisType === "smart_competition" ||
               analysisType === "strategic_recommendations"
                 ? 12000
                 : analysisType === "stp" || analysisType === "customer_journey"
                   ? 10000
-                  : 6000,
-            reasoning_effort: "minimal",
-          });
+                  : 6000;
+            baseParams.reasoning_effort = "minimal";
+          }
+
+          completion = await openai.chat.completions.create(baseParams);
           break; // Success, exit retry loop
         } catch (error) {
           lastError = error;
