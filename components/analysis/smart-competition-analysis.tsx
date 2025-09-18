@@ -25,6 +25,8 @@ import {
   XCircle,
   Zap,
   Eye,
+  Lightbulb,
+  Quote,
 } from "lucide-react";
 
 interface SmartCompetitionAnalysisProps {
@@ -153,16 +155,28 @@ export function SmartCompetitionAnalysis({
   if (!analysis?.data?.smart_competition_analysis) {
     return (
       <Card>
-        <CardContent className="py-8">
-          <div className="text-center text-gray-500">
-            <Trophy className="h-12 w-12 mx-auto mb-4 opacity-30" />
-            <p className="text-lg font-medium">
-              Smart Competition Analysis Not Available
-            </p>
-            <p className="text-sm">
-              This analysis requires competitor data and completed foundational
-              analyses
-            </p>
+        <CardHeader>
+          <CardTitle className="flex items-center text-gray-900 dark:text-white">
+            <div className="p-2 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 mr-3">
+              <Trophy className="h-5 w-5 text-white" />
+            </div>
+            Smart Competition Analysis
+          </CardTitle>
+          <CardDescription>
+            Strategic competitive analysis and insights
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <Trophy className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+              <p className="text-lg font-medium text-gray-900 dark:text-white">
+                Smart Competition Analysis Not Available
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                This analysis requires competitor data and completed foundational analyses
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -188,10 +202,15 @@ export function SmartCompetitionAnalysis({
       {/* Executive Summary */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <Eye className="h-5 w-5 mr-2" />
+          <CardTitle className="flex items-center text-gray-900 dark:text-white">
+            <div className="p-2 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 mr-3">
+              <Eye className="h-5 w-5 text-white" />
+            </div>
             Executive Summary
           </CardTitle>
+          <CardDescription>
+            Strategic competitive position and key insights
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>

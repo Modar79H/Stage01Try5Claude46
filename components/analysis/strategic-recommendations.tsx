@@ -248,7 +248,7 @@ export function StrategicRecommendations({
                   >
                     {/* Header with priority and timeframe */}
                     <div className="flex items-start justify-between mb-3">
-                      <h4 className="font-semibold text-lg pr-4">
+                      <h4 className="font-semibold text-base pr-4">
                         {recommendation.recommendation}
                       </h4>
                       <div className="flex items-center space-x-2 flex-shrink-0">

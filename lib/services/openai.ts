@@ -1230,18 +1230,17 @@ Generate comprehensive strategic recommendations based on this synthesis.`;
     existingAnalyses: Record<string, any>,
     competitorReviews: ReviewMetadata[],
   ): string {
-    let prompt = `Conduct a Smart Competition Analysis by comparing your existing product insights with comprehensive competitor analyses.\n\n`;
+    let prompt = `Conduct a Smart Competition Analysis by comparing specific analysis dimensions. CRITICAL: You MUST use ONLY the designated data for each comparison dimension as specified below.\n\n`;
 
-    // Add existing analysis data
-    prompt += `YOUR PRODUCT'S EXISTING ANALYSIS DATA:\n\n`;
+    // Section 1: Product Variations (for context across all dimensions)
+    prompt += `=== PRODUCT VARIATIONS (for contextual reference only) ===\n\n`;
 
     // Add main product variations if available
     if (
       existingAnalyses.productVariations &&
       Object.keys(existingAnalyses.productVariations).length > 0
     ) {
-      prompt += `PRODUCT VARIATIONS:\n`;
-      prompt += `This product has the following variations:\n`;
+      prompt += `YOUR PRODUCT VARIATIONS:\n`;
       Object.entries(existingAnalyses.productVariations).forEach(
         ([variation, info]: [string, any]) => {
           prompt += `- ${variation}: ${info.count} reviews`;
@@ -1254,46 +1253,17 @@ Generate comprehensive strategic recommendations based on this synthesis.`;
       prompt += `\n`;
     }
 
-    if (existingAnalyses.product_description) {
-      prompt += `PRODUCT DESCRIPTION ANALYSIS:\n`;
-      prompt += JSON.stringify(existingAnalyses.product_description, null, 2);
-      prompt += `\n\n`;
-    }
-
-    if (existingAnalyses.swot) {
-      prompt += `SWOT ANALYSIS:\n`;
-      prompt += JSON.stringify(existingAnalyses.swot, null, 2);
-      prompt += `\n\n`;
-    }
-
-    if (existingAnalyses.stp) {
-      prompt += `STP ANALYSIS:\n`;
-      prompt += JSON.stringify(existingAnalyses.stp, null, 2);
-      prompt += `\n\n`;
-    }
-
-    if (existingAnalyses.customer_journey) {
-      prompt += `CUSTOMER JOURNEY ANALYSIS:\n`;
-      prompt += JSON.stringify(existingAnalyses.customer_journey, null, 2);
-      prompt += `\n\n`;
-    }
-
-    // Add competitor analyses
+    // Add competitor variations
     if (existingAnalyses.competitorAnalyses) {
-      prompt += `COMPETITOR ANALYSES:\n\n`;
-
       for (const [competitorId, analyses] of Object.entries(
         existingAnalyses.competitorAnalyses,
       )) {
         const competitorData = analyses as any;
-        prompt += `COMPETITOR: ${competitorData.name} (ID: ${competitorId})\n\n`;
-
-        // Add competitor variations if available
         if (
           competitorData.variations &&
           Object.keys(competitorData.variations).length > 0
         ) {
-          prompt += `Competitor Variations:\n`;
+          prompt += `${competitorData.name} VARIATIONS:\n`;
           Object.entries(competitorData.variations).forEach(
             ([variation, info]: [string, any]) => {
               prompt += `- ${variation}: ${info.count} reviews`;
@@ -1305,27 +1275,91 @@ Generate comprehensive strategic recommendations based on this synthesis.`;
           );
           prompt += `\n`;
         }
+      }
+    }
 
+    // Section 2: Product Attributes Data (ONLY for Product Attributes Comparison)
+    prompt += `\n=== SECTION 1: PRODUCT DESCRIPTION DATA (USE ONLY FOR PRODUCT ATTRIBUTES COMPARISON) ===\n\n`;
+
+    if (existingAnalyses.product_description) {
+      prompt += `YOUR PRODUCT DESCRIPTION:\n`;
+      prompt += JSON.stringify(existingAnalyses.product_description, null, 2);
+      prompt += `\n\n`;
+    }
+
+    if (existingAnalyses.competitorAnalyses) {
+      for (const [competitorId, analyses] of Object.entries(
+        existingAnalyses.competitorAnalyses,
+      )) {
+        const competitorData = analyses as any;
         if (competitorData.product_description) {
-          prompt += `Product Description:\n`;
+          prompt += `${competitorData.name} PRODUCT DESCRIPTION:\n`;
           prompt += JSON.stringify(competitorData.product_description, null, 2);
           prompt += `\n\n`;
         }
+      }
+    }
 
+    // Section 3: SWOT Data (ONLY for SWOT Matrix Comparison)
+    prompt += `\n=== SECTION 2: SWOT DATA (USE ONLY FOR SWOT MATRIX COMPARISON) ===\n\n`;
+
+    if (existingAnalyses.swot) {
+      prompt += `YOUR SWOT ANALYSIS:\n`;
+      prompt += JSON.stringify(existingAnalyses.swot, null, 2);
+      prompt += `\n\n`;
+    }
+
+    if (existingAnalyses.competitorAnalyses) {
+      for (const [competitorId, analyses] of Object.entries(
+        existingAnalyses.competitorAnalyses,
+      )) {
+        const competitorData = analyses as any;
         if (competitorData.swot) {
-          prompt += `SWOT Analysis (Strengths & Weaknesses):\n`;
+          prompt += `${competitorData.name} SWOT (Strengths & Weaknesses only):\n`;
           prompt += JSON.stringify(competitorData.swot, null, 2);
           prompt += `\n\n`;
         }
+      }
+    }
 
+    // Section 4: STP Data (ONLY for Customer Segmentation Analysis)
+    prompt += `\n=== SECTION 3: STP DATA (USE ONLY FOR CUSTOMER SEGMENTATION ANALYSIS) ===\n\n`;
+
+    if (existingAnalyses.stp) {
+      prompt += `YOUR STP ANALYSIS:\n`;
+      prompt += JSON.stringify(existingAnalyses.stp, null, 2);
+      prompt += `\n\n`;
+    }
+
+    if (existingAnalyses.competitorAnalyses) {
+      for (const [competitorId, analyses] of Object.entries(
+        existingAnalyses.competitorAnalyses,
+      )) {
+        const competitorData = analyses as any;
         if (competitorData.stp) {
-          prompt += `STP Analysis:\n`;
+          prompt += `${competitorData.name} STP ANALYSIS:\n`;
           prompt += JSON.stringify(competitorData.stp, null, 2);
           prompt += `\n\n`;
         }
+      }
+    }
 
+    // Section 5: Customer Journey Data (ONLY for Journey Friction Analysis)
+    prompt += `\n=== SECTION 4: CUSTOMER JOURNEY DATA (USE ONLY FOR JOURNEY FRICTION ANALYSIS) ===\n\n`;
+
+    if (existingAnalyses.customer_journey) {
+      prompt += `YOUR CUSTOMER JOURNEY:\n`;
+      prompt += JSON.stringify(existingAnalyses.customer_journey, null, 2);
+      prompt += `\n\n`;
+    }
+
+    if (existingAnalyses.competitorAnalyses) {
+      for (const [competitorId, analyses] of Object.entries(
+        existingAnalyses.competitorAnalyses,
+      )) {
+        const competitorData = analyses as any;
         if (competitorData.customer_journey) {
-          prompt += `Customer Journey:\n`;
+          prompt += `${competitorData.name} CUSTOMER JOURNEY:\n`;
           prompt += JSON.stringify(competitorData.customer_journey, null, 2);
           prompt += `\n\n`;
         }
@@ -1359,18 +1393,42 @@ Generate comprehensive strategic recommendations based on this synthesis.`;
     prompt += `\nIMPORTANT: Use ONLY these competitor names in your response: ${competitorNamesList.join(", ")}
     DO NOT create fake competitors like "Competitor A" or "Competitor B".
     If no competitor names are provided, respond with an error message.
-    
-    Based on comparing your comprehensive analysis data with the detailed competitor analyses, perform a Smart Competition Analysis that:
 
-1. For Product Attributes: Compare all attributes found in your product description AND all attributes found in each competitor's product description. Consider product variations when comparing attributes - if a feature is only available in certain variations, note this in your analysis. Look for features mentioned in competitor reviews that might not be in your product.
+    CRITICAL DATA ISOLATION RULES:
+    You MUST follow these strict data isolation rules for each analysis dimension:
 
-2. For SWOT Matrix: Compare your SWOT with each competitor's Strengths and Weaknesses. Derive Opportunities from where competitors are weak but you are strong. Derive Threats from where competitors are strong but you are weak.
+    1. PRODUCT ATTRIBUTES COMPARISON:
+       - USE ONLY: Data from SECTION 1 (Product Description Data)
+       - DO NOT USE: Any data from SWOT, STP, or Customer Journey sections
+       - Focus on: Comparing attributes, features, and specifications listed in product descriptions
+       - Consider variations when comparing attributes
 
-3. For Segmentation: Compare your customer segments with each competitor's segments. Look for overlaps and gaps in targeting.
+    2. SWOT MATRIX COMPARISON:
+       - USE ONLY: Data from SECTION 2 (SWOT Data)
+       - DO NOT USE: Any data from Product Description, STP, or Customer Journey sections
+       - Focus on: Comparing strengths, weaknesses, and deriving opportunities/threats
 
-4. For Customer Journey: Compare friction points at each stage of the journey between you and competitors.
+    3. CUSTOMER SEGMENTATION ANALYSIS:
+       - USE ONLY: Data from SECTION 3 (STP Data)
+       - DO NOT USE: Any data from Product Description, SWOT, or Customer Journey sections
+       - Focus on: Comparing target segments, positioning, and overlap analysis
 
-Focus on strategic intelligence and actionable insights with detailed explanations.`;
+    4. CUSTOMER JOURNEY FRICTION ANALYSIS:
+       - USE ONLY: Data from SECTION 4 (Customer Journey Data)
+       - DO NOT USE: Any data from Product Description, SWOT, or STP sections
+       - Focus on: Comparing friction points across journey stages
+
+    Based on this isolated data, perform a Smart Competition Analysis following these specific guidelines:
+
+1. For Product Attributes (USE SECTION 1 ONLY): Compare all attributes found in your product description AND all attributes found in each competitor's product description. Look for features mentioned in competitor descriptions that might not be in your product.
+
+2. For SWOT Matrix (USE SECTION 2 ONLY): Compare your SWOT with each competitor's Strengths and Weaknesses. Derive Opportunities from where competitors are weak but you are strong. Derive Threats from where competitors are strong but you are weak.
+
+3. For Segmentation (USE SECTION 3 ONLY): Compare your customer segments with each competitor's segments. Look for overlaps and gaps in targeting. Base overlap calculations ONLY on the segmentation data provided.
+
+4. For Customer Journey (USE SECTION 4 ONLY): Compare friction points at each stage of the journey between you and competitors. Score friction based ONLY on the journey data provided, not on any other analysis.
+
+REMEMBER: Each dimension MUST be analyzed using ONLY its designated section. Cross-contamination of data between sections will result in invalid analysis. Focus on strategic intelligence and actionable insights with detailed explanations based on the isolated data.`;
 
     return prompt;
   }

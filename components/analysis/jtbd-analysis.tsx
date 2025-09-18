@@ -17,12 +17,10 @@ import {
   Wrench,
   Heart,
   Users2,
+  Lightbulb,
+  TrendingUp,
+  Brain,
 } from "lucide-react";
-import {
-  ANALYSIS_COLORS,
-  CLEAN_CARD_STYLES,
-  QUOTE_STYLES,
-} from "@/styles/analysis-styles";
 import { BadgeTooltip } from "./BadgeTooltip";
 
 interface JTBDAnalysisProps {
@@ -67,28 +65,44 @@ const getJobTypeInfo = (type: string) => {
         icon: <Wrench className="h-5 w-5" />,
         title: "Functional Jobs",
         description: "Practical tasks and functional needs",
-        colorScheme: "opportunity" as const, // Use muted blue
+        color: "text-blue-700",
+        bgColor: "bg-blue-50",
+        borderColor: "border-blue-500",
+        badgeColor: "bg-blue-100 text-blue-800",
+        gradientColors: "from-blue-500 to-indigo-500",
       };
     case "emotional":
       return {
         icon: <Heart className="h-5 w-5" />,
         title: "Emotional Jobs",
         description: "Feelings and emotional outcomes desired",
-        colorScheme: "weakness" as const, // Use muted red
+        color: "text-red-700",
+        bgColor: "bg-red-50",
+        borderColor: "border-red-500",
+        badgeColor: "bg-red-100 text-red-800",
+        gradientColors: "from-red-500 to-pink-500",
       };
     case "social":
       return {
         icon: <Users2 className="h-5 w-5" />,
         title: "Social Jobs",
         description: "Social status and reputation needs",
-        colorScheme: "strength" as const, // Use muted green
+        color: "text-green-700",
+        bgColor: "bg-green-50",
+        borderColor: "border-green-500",
+        badgeColor: "bg-green-100 text-green-800",
+        gradientColors: "from-green-500 to-emerald-500",
       };
     default:
       return {
         icon: <Target className="h-5 w-5" />,
         title: "Jobs",
         description: "",
-        colorScheme: "opportunity" as const,
+        color: "text-gray-700",
+        bgColor: "bg-gray-50",
+        borderColor: "border-gray-500",
+        badgeColor: "bg-gray-100 text-gray-800",
+        gradientColors: "from-gray-500 to-gray-600",
       };
   }
 };
@@ -96,18 +110,38 @@ const getJobTypeInfo = (type: string) => {
 export function JTBDAnalysis({ analysis }: JTBDAnalysisProps) {
   if (!analysis || analysis.status !== "completed") {
     return (
-      <div className={`${CLEAN_CARD_STYLES.base} ${CLEAN_CARD_STYLES.padding}`}>
-        <div className="text-center py-8">
-          <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-            <Target className="h-8 w-8 text-gray-400" />
-          </div>
-          <p className="text-gray-500 text-lg font-medium">
-            {analysis?.status === "processing"
-              ? "Analyzing jobs to be done..."
-              : "Jobs to be Done analysis not yet completed"}
-          </p>
-        </div>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center text-gray-900 dark:text-white">
+            <div className="p-2 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 mr-3">
+              <Target className="h-5 w-5 text-white" />
+            </div>
+            Jobs to be Done Analysis
+          </CardTitle>
+          <CardDescription>
+            Understanding why customers hire your product
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {analysis?.status === "failed" ? (
+            <div className="flex items-center space-x-2 text-red-600 bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200 dark:border-red-800">
+              <AlertCircle className="h-4 w-4" />
+              <span className="text-sm">
+                Analysis failed: {analysis.error || "Unknown error"}
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gradient-primary mx-auto mb-4"></div>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Analysis in progress...
+                </p>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     );
   }
 
@@ -115,9 +149,19 @@ export function JTBDAnalysis({ analysis }: JTBDAnalysisProps) {
 
   if (!data) {
     return (
-      <div className={`${CLEAN_CARD_STYLES.base} ${CLEAN_CARD_STYLES.padding}`}>
-        <p className="text-gray-600 text-center">No JTBD data available.</p>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center text-gray-900 dark:text-white">
+            <div className="p-2 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 mr-3">
+              <Target className="h-5 w-5 text-white" />
+            </div>
+            Jobs to be Done Analysis
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-gray-600 dark:text-gray-400">No JTBD data available.</p>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -129,162 +173,114 @@ export function JTBDAnalysis({ analysis }: JTBDAnalysisProps) {
 
   return (
     <div className="space-y-6">
-      {/* Charts Overview with Clean Design */}
-      <div className={`${CLEAN_CARD_STYLES.base} ${CLEAN_CARD_STYLES.padding}`}>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Jobs to be Done Overview
-        </h3>
-        <p className="text-sm text-gray-600 mb-6">
-          Distribution of functional, emotional, and social jobs
-        </p>
-        <JTBDChart data={data} />
-      </div>
+      {/* Charts Overview */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center text-gray-900 dark:text-white">
+            <div className="p-2 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 mr-3">
+              <Target className="h-5 w-5 text-white" />
+            </div>
+            JTBD Distribution
+          </CardTitle>
+          <CardDescription>
+            Visual breakdown of functional, emotional, and social jobs
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <JTBDChart data={data} />
+        </CardContent>
+      </Card>
 
-      {/* Clean Methodology Explanation */}
-      <div
-        className={`${CLEAN_CARD_STYLES.base} ${CLEAN_CARD_STYLES.padding}`}
-        style={{ backgroundColor: ANALYSIS_COLORS.opportunity.bg }}
-      >
-        <h3
-          className="text-lg font-semibold mb-4"
-          style={{ color: ANALYSIS_COLORS.opportunity.text }}
-        >
-          About Jobs to be Done
-        </h3>
-        <p
-          className="mb-4 text-sm"
-          style={{ color: ANALYSIS_COLORS.opportunity.text }}
-        >
-          The Jobs to be Done framework helps understand why customers "hire"
-          your product. Each job follows the format: "When [situation], I want
-          [action], so that [outcome]."
-        </p>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {jobTypes.map((jobType) => {
-            const typeInfo = getJobTypeInfo(jobType.key);
-            const colors = ANALYSIS_COLORS[typeInfo.colorScheme];
-
-            return (
-              <div
-                key={jobType.key}
-                className="text-center p-4 rounded-lg border-l-4"
-                style={{
-                  backgroundColor: ANALYSIS_COLORS.card.bg,
-                  borderLeftColor: colors.border,
-                }}
-              >
-                <div
-                  className="mb-2 flex justify-center"
-                  style={{ color: colors.icon }}
-                >
-                  {typeInfo.icon}
-                </div>
-                <h4 className="font-semibold text-gray-900">
-                  {typeInfo.title}
-                </h4>
-                <p className="text-sm text-gray-600">{typeInfo.description}</p>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Job Type Sections with Clean Design */}
+      {/* Detailed Job Type Sections */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {jobTypes.map((jobType) => {
           if (!jobType.data || jobType.data.length === 0) return null;
 
           const typeInfo = getJobTypeInfo(jobType.key);
-          const colors = ANALYSIS_COLORS[typeInfo.colorScheme];
 
           return (
-            <div
-              key={jobType.key}
-              className={`${CLEAN_CARD_STYLES.base} ${CLEAN_CARD_STYLES.hover}`}
-            >
-              {/* Clean Header */}
-              <div
-                className="px-6 py-4 border-l-4"
-                style={{
-                  backgroundColor: colors.bg,
-                  borderLeftColor: colors.border,
-                  color: colors.text,
-                }}
-              >
-                <div className="flex items-center space-x-3">
-                  <div style={{ color: colors.icon }}>{typeInfo.icon}</div>
-                  <div>
-                    <h3 className="font-semibold">{typeInfo.title}</h3>
-                    <p className="text-sm opacity-80">{typeInfo.description}</p>
+            <Card key={jobType.key}>
+              <CardHeader>
+                <CardTitle className="flex items-center text-gray-900 dark:text-white">
+                  <div
+                    className={`p-2 rounded-lg bg-gradient-to-r ${typeInfo.gradientColors} mr-3`}
+                  >
+                    <div className="text-white">{typeInfo.icon}</div>
                   </div>
-                </div>
-              </div>
-
-              {/* Content */}
-              <div className="p-6 space-y-4">
-                {jobType.data
-                  .filter((job: any) => {
-                    if (!job.percentage) return true; // Keep topics without percentage
-                    const value = parseFloat(job.percentage.replace("%", ""));
-                    return value >= 1; // Only keep topics with 1% or higher
-                  })
-                  .map((job, index) => (
-                    <div key={index} className="space-y-3">
-                      <div className="flex items-start justify-between">
+                  <span>{typeInfo.title}</span>
+                </CardTitle>
+                <CardDescription>{typeInfo.description}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {jobType.data
+                    .filter((job: any) => {
+                      if (!job.percentage) return true;
+                      const value = parseFloat(job.percentage.replace('%', ''));
+                      return value >= 1;
+                    })
+                    .sort((a: any, b: any) => {
+                      const aValue = parseFloat(a.percentage?.replace('%', '') || '0');
+                      const bValue = parseFloat(b.percentage?.replace('%', '') || '0');
+                      return bValue - aValue;
+                    })
+                    .map((job, index) => (
+                    <div
+                      key={index}
+                      className="border-l-4 border-gradient-primary pl-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-r-lg p-4 hover:bg-gray-100/50 dark:hover:bg-gray-700/50 transition-colors"
+                    >
+                      <div className="flex items-start justify-between mb-2">
                         <div className="flex-1">
                           {job.job && (
-                            <h4 className="font-semibold text-gray-900 text-base mb-2">
+                            <h4 className="font-semibold text-base text-gray-900 dark:text-white mb-2">
                               {job.job}
                             </h4>
                           )}
-                          <p className="font-medium text-gray-900 text-sm leading-relaxed">
+                          <p className="font-medium text-gray-900 dark:text-white text-sm leading-relaxed">
                             {job.job_statement}
                           </p>
                         </div>
-                        <BadgeTooltip type="percentage" value={job.percentage}>
-                          <span
-                            className="text-xs px-2 py-1 rounded-full font-medium ml-3"
-                            style={{
-                              backgroundColor: colors.bg,
-                              color: colors.text,
-                              border: `1px solid ${colors.border}`,
-                            }}
-                          >
-                            {job.percentage}
-                          </span>
-                        </BadgeTooltip>
-                      </div>
-
-                      <div className="flex items-center space-x-2">
-                        {job.importance && (
-                          <BadgeTooltip
-                            type="importance"
-                            value={job.importance}
-                          >
+                        <div className="flex items-center gap-2 ml-3">
+                          {job.importance && (
+                            <BadgeTooltip type="importance" value={job.importance}>
+                              <Badge
+                                variant={
+                                  job.importance === "High"
+                                    ? "destructive"
+                                    : job.importance === "Medium"
+                                      ? "default"
+                                      : "secondary"
+                                }
+                                size="sm"
+                              >
+                                {job.importance}
+                              </Badge>
+                            </BadgeTooltip>
+                          )}
+                          <BadgeTooltip type="percentage" value={job.percentage}>
                             <Badge
                               variant={
-                                job.importance === "High"
-                                  ? "destructive"
-                                  : job.importance === "Medium"
-                                    ? "default"
-                                    : "secondary"
+                                jobType.key === "functional"
+                                  ? "info"
+                                  : jobType.key === "emotional"
+                                    ? "destructive"
+                                    : "success"
                               }
-                              className="text-xs"
+                              size="sm"
                             >
-                              {job.importance}
+                              {job.percentage || 'Calculating...'}
                             </Badge>
                           </BadgeTooltip>
-                        )}
+                        </div>
                       </div>
-
-                      <p className="text-sm text-gray-700">{job.summary}</p>
-
+                      <p className="text-gray-700 dark:text-gray-300 text-sm mb-3">
+                        {job.summary}
+                      </p>
                       {job.example_quote && (
-                        <div className={`${QUOTE_STYLES.container}`}>
+                        <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
                           <div className="flex items-start space-x-2">
-                            <Quote className={`${QUOTE_STYLES.icon} mt-0.5`} />
-                            <p className={`${QUOTE_STYLES.text}`}>
+                            <Quote className="h-4 w-4 mt-0.5 flex-shrink-0 text-gray-500 dark:text-gray-400" />
+                            <p className="italic text-sm text-gray-700 dark:text-gray-300">
                               "{job.example_quote}"
                             </p>
                           </div>
@@ -292,61 +288,91 @@ export function JTBDAnalysis({ analysis }: JTBDAnalysisProps) {
                       )}
                     </div>
                   ))}
-              </div>
-            </div>
+                </div>
+              </CardContent>
+            </Card>
           );
         })}
       </div>
 
-      {/* Strategic Insights with Clean Design */}
-      <div
-        className={`${CLEAN_CARD_STYLES.base} ${CLEAN_CARD_STYLES.padding}`}
-        style={{ backgroundColor: ANALYSIS_COLORS.strength.bg }}
-      >
-        <h3
-          className="text-lg font-semibold mb-4"
-          style={{ color: ANALYSIS_COLORS.strength.text }}
-        >
-          Strategic JTBD Insights
-        </h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white rounded-lg p-4 border-l-4 border-blue-500">
-            <div className="flex items-center mb-2">
-              <Wrench className="h-5 w-5 text-blue-600 mr-2" />
-              <h4 className="font-semibold text-gray-900">Functional Focus</h4>
+      {/* Strategic Implications */}
+      <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border-indigo-200 dark:border-indigo-800">
+        <CardHeader>
+          <CardTitle className="text-indigo-900 dark:text-indigo-100 flex items-center">
+            <div className="p-2 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 mr-3">
+              <Lightbulb className="h-5 w-5 text-white" />
             </div>
-            <p className="text-sm text-gray-700">
-              Address the core functional jobs to ensure your product solves
-              real problems effectively.
-            </p>
-          </div>
-
-          <div className="bg-white rounded-lg p-4 border-l-4 border-red-500">
-            <div className="flex items-center mb-2">
-              <Heart className="h-5 w-5 text-red-600 mr-2" />
-              <h4 className="font-semibold text-gray-900">
-                Emotional Connection
-              </h4>
+            Strategic JTBD Insights
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-white/20 dark:border-gray-700/20 hover:shadow-md transition-shadow">
+              <div className="flex items-center mb-3">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center mr-3">
+                  <Wrench className="h-5 w-5 text-white" />
+                </div>
+                <h4 className="font-semibold text-indigo-900 dark:text-indigo-100">
+                  Functional Focus
+                </h4>
+              </div>
+              <ul className="text-sm space-y-2">
+                {data.functional_jobs &&
+                  data.functional_jobs.slice(0, 2).map((job, idx) => (
+                    <li key={idx} className="flex items-start">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                      <span className="text-indigo-800 dark:text-indigo-200">
+                        Enhance {job.job_statement.toLowerCase().split(' ')[3] || 'core functionality'}
+                      </span>
+                    </li>
+                  ))}
+              </ul>
             </div>
-            <p className="text-sm text-gray-700">
-              Build emotional satisfaction to create deeper customer loyalty and
-              preference.
-            </p>
-          </div>
-
-          <div className="bg-white rounded-lg p-4 border-l-4 border-green-500">
-            <div className="flex items-center mb-2">
-              <Users2 className="h-5 w-5 text-green-600 mr-2" />
-              <h4 className="font-semibold text-gray-900">Social Impact</h4>
+            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-white/20 dark:border-gray-700/20 hover:shadow-md transition-shadow">
+              <div className="flex items-center mb-3">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-red-500 to-pink-500 flex items-center justify-center mr-3">
+                  <Heart className="h-5 w-5 text-white" />
+                </div>
+                <h4 className="font-semibold text-indigo-900 dark:text-indigo-100">
+                  Emotional Connection
+                </h4>
+              </div>
+              <ul className="text-sm space-y-2">
+                {data.emotional_jobs &&
+                  data.emotional_jobs.slice(0, 2).map((job, idx) => (
+                    <li key={idx} className="flex items-start">
+                      <div className="w-2 h-2 bg-red-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                      <span className="text-indigo-800 dark:text-indigo-200">
+                        Build loyalty through emotional satisfaction
+                      </span>
+                    </li>
+                  ))}
+              </ul>
             </div>
-            <p className="text-sm text-gray-700">
-              Leverage social jobs to encourage word-of-mouth and community
-              building.
-            </p>
+            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-white/20 dark:border-gray-700/20 hover:shadow-md transition-shadow">
+              <div className="flex items-center mb-3">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center mr-3">
+                  <Users2 className="h-5 w-5 text-white" />
+                </div>
+                <h4 className="font-semibold text-indigo-900 dark:text-indigo-100">
+                  Social Impact
+                </h4>
+              </div>
+              <ul className="text-sm space-y-2">
+                {data.social_jobs &&
+                  data.social_jobs.slice(0, 2).map((job, idx) => (
+                    <li key={idx} className="flex items-start">
+                      <div className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                      <span className="text-indigo-800 dark:text-indigo-200">
+                        Leverage social validation for growth
+                      </span>
+                    </li>
+                  ))}
+              </ul>
+            </div>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

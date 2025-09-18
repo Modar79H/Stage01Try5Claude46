@@ -227,7 +227,7 @@ export function FourWMatrix({ analysis }: FourWMatrixProps) {
                     <div key={index} className="border-l-4 border-blue-500 pl-4">
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <h4 className="font-semibold">{item.topic}</h4>
+                          <h4 className="font-semibold text-base">{item.topic}</h4>
                           {item.temporal_trend && (
                             <TrendIndicator 
                               status={item.temporal_trend.status} 
@@ -279,10 +279,10 @@ export function FourWMatrix({ analysis }: FourWMatrixProps) {
                         </div>
                       )}
                       {item.example_quote && (
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
                           <div className="flex items-start space-x-2">
-                            <Quote className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                            <p className="text-blue-800 italic text-sm">
+                            <Quote className="h-4 w-4 text-gray-500 dark:text-gray-400 mt-0.5 flex-shrink-0" />
+                            <p className="text-gray-700 dark:text-gray-300 italic text-sm">
                               "{item.example_quote}"
                             </p>
                           </div>

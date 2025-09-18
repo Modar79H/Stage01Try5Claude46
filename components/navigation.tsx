@@ -25,7 +25,6 @@ import {
   User,
   X,
 } from "lucide-react";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 export function Navigation() {
   const { data: session } = useSession();
@@ -67,8 +66,6 @@ export function Navigation() {
 
           {/* User menu */}
           <div className="hidden sm:ml-6 sm:flex sm:items-center space-x-4">
-            <ThemeToggle />
-
             <Button asChild size="sm">
               <Link href="/brands/new">
                 <Plus className="h-4 w-4 mr-2" />

@@ -245,7 +245,7 @@ export function SWOTAnalysis({ analysis }: SWOTAnalysisProps) {
                     >
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <h4 className="font-semibold text-gray-900 dark:text-white">
+                          <h4 className="font-semibold text-base text-gray-900 dark:text-white">
                             {item.topic}
                           </h4>
                           {item.temporal_trend && (
@@ -303,9 +303,9 @@ export function SWOTAnalysis({ analysis }: SWOTAnalysisProps) {
                         </div>
                       )}
                       {item.example_quote && (
-                        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                        <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
                           <div className="flex items-start space-x-2">
-                            <Quote className="h-4 w-4 mt-0.5 flex-shrink-0 text-blue-600 dark:text-blue-400" />
+                            <Quote className="h-4 w-4 mt-0.5 flex-shrink-0 text-gray-500 dark:text-gray-400" />
                             <p className="italic text-sm text-gray-700 dark:text-gray-300">
                               "{item.example_quote}"
                             </p>

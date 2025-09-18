@@ -46,6 +46,7 @@ import {
   X,
   MessageCircle,
   HelpCircle,
+  Quote,
 } from "lucide-react";
 import { PersonaChatbot } from "@/components/persona/PersonaChatbot";
 import { TemporalBadge, TrendIndicator } from "@/components/temporal";
@@ -124,6 +125,55 @@ interface STPAnalysisProps {
   productName?: string;
 }
 
+const getSTPInfo = (type: string) => {
+  switch (type) {
+    case "segmentation":
+      return {
+        icon: <Users className="h-5 w-5" />,
+        title: "Market Segmentation",
+        description: "Identified customer groups and characteristics",
+        color: "text-blue-700",
+        bgColor: "bg-blue-50",
+        borderColor: "border-blue-500",
+        badgeColor: "bg-blue-100 text-blue-800",
+        gradientColors: "from-blue-500 to-indigo-500",
+      };
+    case "targeting":
+      return {
+        icon: <Crosshair className="h-5 w-5" />,
+        title: "Targeting Strategy",
+        description: "Selected segments and approach",
+        color: "text-green-700",
+        bgColor: "bg-green-50",
+        borderColor: "border-green-500",
+        badgeColor: "bg-green-100 text-green-800",
+        gradientColors: "from-green-500 to-emerald-500",
+      };
+    case "positioning":
+      return {
+        icon: <MapPin className="h-5 w-5" />,
+        title: "Positioning Strategy",
+        description: "Market position and value proposition",
+        color: "text-purple-700",
+        bgColor: "bg-purple-50",
+        borderColor: "border-purple-500",
+        badgeColor: "bg-purple-100 text-purple-800",
+        gradientColors: "from-purple-500 to-pink-500",
+      };
+    default:
+      return {
+        icon: <Target className="h-5 w-5" />,
+        title: "STP",
+        description: "",
+        color: "text-gray-700",
+        bgColor: "bg-gray-50",
+        borderColor: "border-gray-500",
+        badgeColor: "bg-gray-100 text-gray-800",
+        gradientColors: "from-gray-500 to-gray-600",
+      };
+  }
+};
+
 // Helper function to format persona names
 function formatPersonaNames(
   personaData: string | string[] | undefined,
@@ -201,10 +251,10 @@ export function STPAnalysis({
   };
   if (!analysis || analysis.status !== "completed") {
     return (
-      <Card variant="glass" hover>
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center text-gray-900 dark:text-white">
-            <div className="p-2 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 mr-3">
+            <div className="p-2 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 mr-3">
               <Target className="h-5 w-5 text-white" />
             </div>
             STP Analysis
@@ -240,10 +290,10 @@ export function STPAnalysis({
 
   if (!data) {
     return (
-      <Card variant="glass" hover>
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center text-gray-900 dark:text-white">
-            <div className="p-2 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 mr-3">
+            <div className="p-2 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 mr-3">
               <Target className="h-5 w-5 text-white" />
             </div>
             STP Analysis
@@ -260,60 +310,26 @@ export function STPAnalysis({
 
   return (
     <div className="space-y-6">
-      {/* STP Framework Overview */}
-      <Card
-        variant="gradient"
-        className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800"
-      >
+      {/* Charts Overview */}
+      <Card>
         <CardHeader>
-          <CardTitle className="text-green-900 dark:text-green-100 flex items-center">
-            <div className="p-2 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 mr-3">
+          <CardTitle className="flex items-center text-gray-900 dark:text-white">
+            <div className="p-2 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 mr-3">
               <Target className="h-5 w-5 text-white" />
             </div>
-            STP Marketing Framework
+            STP Distribution
           </CardTitle>
+          <CardDescription>
+            Visual breakdown of segmentation, targeting, and positioning
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center p-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-sm border border-white/20 dark:border-gray-700/20 hover:shadow-md transition-shadow">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center mx-auto mb-4">
-                <Users className="h-8 w-8 text-white" />
-              </div>
-              <h3 className="font-semibold text-green-900 dark:text-green-100 mb-2">
-                Segmentation
-              </h3>
-              <p className="text-sm text-green-800 dark:text-green-200">
-                Divide market into groups
-              </p>
-            </div>
-            <div className="text-center p-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-sm border border-white/20 dark:border-gray-700/20 hover:shadow-md transition-shadow">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center mx-auto mb-4">
-                <Crosshair className="h-8 w-8 text-white" />
-              </div>
-              <h3 className="font-semibold text-green-900 dark:text-green-100 mb-2">
-                Targeting
-              </h3>
-              <p className="text-sm text-green-800 dark:text-green-200">
-                Select segments to serve
-              </p>
-            </div>
-            <div className="text-center p-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-sm border border-white/20 dark:border-gray-700/20 hover:shadow-md transition-shadow">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-4">
-                <MapPin className="h-8 w-8 text-white" />
-              </div>
-              <h3 className="font-semibold text-green-900 dark:text-green-100 mb-2">
-                Positioning
-              </h3>
-              <p className="text-sm text-green-800 dark:text-green-200">
-                Create distinct market position
-              </p>
-            </div>
-          </div>
+          <STPChart data={data} />
         </CardContent>
       </Card>
 
       {/* Market Definition */}
-      <Card variant="glass" hover>
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center text-gray-900 dark:text-white">
             <div className="p-2 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 mr-3">
@@ -333,7 +349,7 @@ export function STPAnalysis({
       </Card>
 
       {/* Segmentation */}
-      <Card variant="glass" hover>
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center text-gray-900 dark:text-white">
             <div className="p-2 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 mr-3">
@@ -366,7 +382,7 @@ export function STPAnalysis({
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-2">
-                      <h4 className="font-semibold text-lg text-gray-900 dark:text-white">
+                      <h4 className="font-semibold text-base text-gray-900 dark:text-white">
                         {segment.segment}
                       </h4>
                       {segment.temporal_trend && (
@@ -451,9 +467,9 @@ export function STPAnalysis({
 
                     {/* Example Quote */}
                     {segment.example_quote && (
-                      <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                      <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
                         <h5 className="font-medium text-gray-900 dark:text-white mb-2 flex items-center">
-                          <MessageSquare className="h-4 w-4 mr-2 text-blue-600 dark:text-blue-400" />
+                          <Quote className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
                           Customer Quote
                         </h5>
                         <p className="text-gray-700 dark:text-gray-300 text-sm italic">
